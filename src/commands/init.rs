@@ -28,8 +28,8 @@ pub fn command_init() -> Result<(), ModManError> {
     match crate::config::read_config(&current_dir) {
         Ok(_) => {
             println!(" {} {} {} {}", "!".red().bold(),
-                "Found existing config.toml file! 'modman init' will".red().bold(),
-                "ERASE".red().bold().underline(), "config.toml, thus removing the mods list!".red().bold()
+                "Found existing modman.toml file! 'modman init' will".red().bold(),
+                "ERASE".red().bold().underline(), "modman.toml, thus removing the mods list!".red().bold()
             );
             println!("   | {}", "To prevent this, press '^C' (Ctrl + C) to exit.".red());
         },
