@@ -7,16 +7,14 @@ use crossterm::execute;
 use crossterm::terminal::{Clear, ClearType};
 
 use crate::errors::ModManError;
-use crate::structs::Config;
+use crate::datatypes::{Config, Mod, ReleaseTypes};
 use crate::utils::get_current_working_dir;
 
 pub fn command_init() -> Result<(), ModManError> {
     let mut game_version = String::new();
     let mut game_loader = String::new();
-    let mut allowed_release_types = String::new();
+    let mut allowed_release_types: Vec<ReleaseTypes> = Vec::new();
     let mut mods_folder = String::new();
-
-    let allowed_values: HashSet<&str> = ["release", "beta", "alpha"].iter().cloned().collect();
 
     let current_dir = match get_current_working_dir() {
         Ok(path) => path,
@@ -69,26 +67,43 @@ pub fn command_init() -> Result<(), ModManError> {
     loop {
         print!(" {} {} {} ", "?".yellow().bold(), "Default Allowed Release Types (alpha, beta, release) (seperated by comma)".bold(), "[Default: 'alpha, beta, release'] >".bright_black());
         io::stdout().flush().unwrap();
-        io::stdin().read_line(&mut allowed_release_types).unwrap();
-        allowed_release_types = allowed_release_types.trim().to_owned();
+        let mut input = String::new();
+        io::stdin().read_line(&mut input).unwrap();
+        input = input.trim().to_owned();
 
-        if allowed_release_types.is_empty() {
-            allowed_release_types = "alpha, beta, release".to_string()
+        if input.is_empty() {
+            input = "alpha, beta, release".to_string()
         }
 
-        let input_values: HashSet<&str> = allowed_release_types.split(',').map(|s| s.trim()).collect();
-        let invalid_values: HashSet<_> = input_values.difference(&allowed_values).collect();
-        let repeated_values: HashSet<_> = input_values.iter().filter(|&v| input_values.iter().filter(|&&x| x == *v).count() > 1).collect();
+        let split_values: Vec<&str> = input.split(',').map(|s| s.trim()).collect();
 
-        if invalid_values.is_empty() && repeated_values.is_empty() {
-            if confirm_input(&allowed_release_types) {
-                break;
-            } else {
-                allowed_release_types.clear();
+        let mut is_valid = true;
+        for value in split_values.iter() {
+            match value.to_lowercase().as_str() {
+                "release" => allowed_release_types.push(ReleaseTypes::Release),
+                "beta" => allowed_release_types.push(ReleaseTypes::Beta),
+                "alpha" => allowed_release_types.push(ReleaseTypes::Alpha),
+                _ => {
+                    println!(" {} Invalid value '{}' detected. Please enter only 'release', 'beta', or 'alpha'.", "!".red().bold(), value.bold());
+                    is_valid = false;
+                    allowed_release_types.clear();
+                    break;
+                }
             }
-        } else {
-            println!(" {} Invalid or repeated values detected. Please re-enter the default allowed release types.", "!".red().bold());
-            allowed_release_types.clear();
+        }
+
+        if is_valid {
+            let unique_values: HashSet<_> = allowed_release_types.iter().collect();
+            if unique_values.len() != allowed_release_types.len() {
+                println!(" {} Repeated values detected. Please enter each release type only once.", "!".red().bold());
+                allowed_release_types.clear();
+            } else {
+                if confirm_input(&crate::datatypes::format_release_types(&allowed_release_types)) {
+                    break;
+                } else {
+                    allowed_release_types.clear();
+                }
+            }
         }
     }
 
@@ -111,11 +126,12 @@ pub fn command_init() -> Result<(), ModManError> {
     }
 
     println!("{} {}", "OK".green().bold(), "Saving configuration. These settings will be used when you run modman in this directory.".bold());
-    println!("   {} {} {} {}", "To reset configuration, run".bright_black(), "'modman init'".bright_black().bold(), "or modify".bright_black(), "config.toml".bright_black().bold());
+    println!("   {} {} {} {}", "To reset configuration, run".bright_black(), "'modman init'".bright_black().bold(), "or modify".bright_black(), "modman.toml".bright_black().bold());
+    
     let config = Config {
         game_loader,
         game_version,
-        allowed_release_types: allowed_release_types.split(',').map(|s| s.trim().to_owned()).collect(),
+        allowed_release_types: allowed_release_types,
         mods_folder: std::path::PathBuf::from(mods_folder),
         mods: Vec::new(), // Empty mods array for now
     };

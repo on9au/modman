@@ -37,6 +37,7 @@ pub fn handle_command(mut args: Args) -> Result<(), ModManError>{
         "help" => command_help(),
         "version" => version::command_version(),
         "install" => install::command_install(&command_options),
+        "add" => todo!(),
         "init" => init::command_init(),
         "remove" => todo!(),
         "search" => todo!(),

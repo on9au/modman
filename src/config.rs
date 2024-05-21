@@ -1,6 +1,6 @@
 use std::{fs, path::PathBuf};
 
-use crate::{errors::ModManError, structs::Config};
+use crate::{errors::ModManError, datatypes::Config};
 
 pub fn save_config(dir: &PathBuf, config: &Config) -> Result<(), ModManError> {
     let config_path = dir.join("modman.toml");

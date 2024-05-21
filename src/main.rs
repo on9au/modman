@@ -2,7 +2,7 @@ mod commands;
 mod config;
 mod errors;
 mod utils;
-mod structs;
+mod datatypes;
 
 use std::{env, process};
 use commands::command_handler;
