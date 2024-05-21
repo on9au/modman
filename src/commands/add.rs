@@ -3,7 +3,7 @@ use crate::{commands::command_structs::CommandOptions, errors::ModManError};
 #[derive(Debug)]
 struct Package {
     search_term: String,
-    source: crate::datatypes::ModSources // If empty, look through both.
+    source: crate::datatypes::ModSources
 }
 
 impl Package {
@@ -24,7 +24,7 @@ pub fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
         <modrinth / curseforge (optional)>@     - The source to look through only, if specified.
         <package_slug / package_ID>             - The name of the package being installed.
 
-        ModMan prioritizes modrinth over curseforge, as it will look through modrinth first before it checks curseforge.
+        ModMan prioritizes modrinth over curseforge. Therefore, if source is left blank (text before @), then modrinth is used.
 
         This argument can be repeated as much times as possible to install multiple mods at a time.
     */

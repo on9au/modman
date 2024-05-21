@@ -7,7 +7,7 @@ use crossterm::execute;
 use crossterm::terminal::{Clear, ClearType};
 
 use crate::errors::ModManError;
-use crate::datatypes::{Config, Mod, ReleaseTypes};
+use crate::datatypes::{Config, ReleaseTypes};
 use crate::utils::get_current_working_dir;
 
 pub fn command_init() -> Result<(), ModManError> {
