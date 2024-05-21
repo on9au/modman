@@ -43,14 +43,14 @@ pub fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
             let search_term = &arg[at_pos + 1..];
             
             if search_term.is_empty() {
-                return Err(ModManError::InvalidCommandArguments(search_term.to_string()));
+                return Err(ModManError::InvalidCommandArguments(arg.to_string()));
             }
             if source.is_empty() {
-                return Err(ModManError::InvalidCommandArguments(search_term.to_string()));
+                return Err(ModManError::InvalidCommandArguments(source.to_string()));
             }
             packages.push(match Package::new(search_term.to_string(), Some(source)) {
                 Ok(result) => result,
-                Err(_) => return Err(ModManError::InvalidCommandArguments(search_term.to_string()))
+                Err(_) => return Err(ModManError::InvalidCommandArguments(arg.to_string()))
             });
         } else {
             if arg.is_empty() {
