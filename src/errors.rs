@@ -5,7 +5,9 @@ pub enum ModManError {
     IoError(std::io::Error),
     NoVersionAfterAt(String),
     NoArguments,
-    NoValidSources,
+    SerializationError(toml::ser::Error),
+    DeserializationError(toml::de::Error),
+    FileNotFound,
 }
 
 impl std::fmt::Display for ModManError {
@@ -16,7 +18,9 @@ impl std::fmt::Display for ModManError {
             ModManError::IoError(err) => write!(f, "IO error: {}", err),
             ModManError::NoVersionAfterAt(package) => write!(f, "No version specified for package: {}", package),
             ModManError::NoArguments => write!(f, "No arguments passed."),
-            ModManError::NoValidSources => write!(f, "No valid sources specified."),
+            ModManError::SerializationError(err) => write!(f, "Serialization error: {}", err),
+            ModManError::DeserializationError(err) => write!(f, "Deserialization error: {}", err),
+            ModManError::FileNotFound => write!(f, "File not found."),
         }
     }
 }
@@ -38,7 +42,9 @@ impl ModManError {
             ModManError::IoError(_) => 3,
             ModManError::NoVersionAfterAt(_) => 4,
             ModManError::NoArguments => 5,
-            ModManError::NoValidSources => 6,
+            ModManError::SerializationError(_) => 6,
+            ModManError::DeserializationError(_) => 7,
+            ModManError::FileNotFound => 8,
         }
     }
 }

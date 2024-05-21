@@ -7,3 +7,6 @@ description = "Minecraft Mod Manager CLI, uses Modrinth and CurseForge."
 
 [dependencies]
 colored = "2.1.0"
+crossterm = "0.27.0"
+serde = { version = "1.0.202", features = ["derive"] }
+toml = "0.8.13"

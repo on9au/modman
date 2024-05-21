@@ -1,6 +1,8 @@
 mod commands;
 mod config;
 mod errors;
+mod utils;
+mod structs;
 
 use std::{env, process};
 use commands::command_handler;

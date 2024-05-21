@@ -3,7 +3,7 @@ use std::env::Args;
 use colored::Colorize;
 
 use crate::{commands::{
-    add_source, command_structs, install, version
+    init, command_structs, install, version
 }, errors::ModManError};
 
 pub fn handle_command(mut args: Args) -> Result<(), ModManError>{
@@ -37,15 +37,13 @@ pub fn handle_command(mut args: Args) -> Result<(), ModManError>{
         "help" => command_help(),
         "version" => version::command_version(),
         "install" => install::command_install(&command_options),
+        "init" => init::command_init(),
         "remove" => todo!(),
         "search" => todo!(),
         "update" => todo!(),
         "upgrade" => todo!(),
         "list" => todo!(),  
         "info" => todo!(),
-        "add-source" => add_source::command_add_source(&command_options),
-        "list-sources" => todo!(),
-        "remove-source" => todo!(),
         _ => {
             println!("Unknown command '{}'.", command_options.command);
             command_help()?;

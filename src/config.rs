@@ -1,41 +1,25 @@
-use std::{fs, io::{self, BufRead}, path::Path};
+use std::{fs, path::PathBuf};
 
-use crate::errors::ModManError;
+use crate::{errors::ModManError, structs::Config};
 
-const CONFIG_DIR: &str = r#"C:\ProgramData\winforge\config"#;
-const SOURCES_FILE: &str = r#"C:\ProgramData\winforge\config\sources"#;
-
-pub fn write_sources_to_config(sources: &Vec<String>) -> Result<(), ModManError> {
-    // Ensure the config directory exists
-    if let Err(err) = fs::create_dir_all(CONFIG_DIR) {
-        return Err(ModManError::IoError(err));
-    }
-
-    // Read existing sources from file
-    let existing_sources = read_existing_sources().unwrap_or_default();
-
-    // Merge new sources with existing sources, removing duplicates
-    let mut all_sources: Vec<String> = existing_sources.into_iter().chain(sources.iter().cloned()).collect();
-    all_sources.sort();
-    all_sources.dedup();
-
-    // Write contents to file
-    let file_content = all_sources.join("\n");
-    if let Err(err) = fs::write(SOURCES_FILE, file_content) {
-        return Err(ModManError::IoError(err));
-    }
-
-    Ok(())
+pub fn save_config(dir: &PathBuf, config: &Config) -> Result<(), ModManError> {
+    let config_path = dir.join("config.toml");
+    let config_data = toml::to_string_pretty(config).map_err(|e| ModManError::SerializationError(e))?;
+    fs::write(config_path, config_data).map_err(|e| ModManError::IoError(e))
 }
 
-pub fn read_existing_sources() -> io::Result<Vec<String>> {
-    let mut sources = Vec::new();
-    if Path::new(SOURCES_FILE).exists() {
-        let file = fs::File::open(SOURCES_FILE)?;
-        let reader = io::BufReader::new(file);
-        for line in reader.lines() {
-            sources.push(line?);
-        }
+pub fn read_config(dir: &PathBuf) -> Result<Config, ModManError> {
+    let config_path = dir.join("config.toml");
+
+    if !config_path.exists() {
+        return Err(ModManError::FileNotFound);
     }
-    Ok(sources)
+    
+    let toml_content = fs::read_to_string(config_path)
+        .map_err(|e| ModManError::IoError(e))?;
+
+    let config: Config = toml::from_str(&toml_content)
+        .map_err(|e| ModManError::DeserializationError(e))?;
+
+    Ok(config)
 }
