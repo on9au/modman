@@ -1,0 +1,9 @@
+[package]
+name = "modman"
+version = "0.1.0"
+edition = "2021"
+authors = ["A0"]
+description = "Minecraft Mod Manager CLI, uses Modrinth and CurseForge."
+
+[dependencies]
+colored = "2.1.0"
