@@ -21,7 +21,7 @@ pub struct Mod {
 }
 
 // Mod sources
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum ModSources {
     Modrinth,
     CurseForge,

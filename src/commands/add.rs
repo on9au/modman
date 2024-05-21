@@ -1,5 +1,6 @@
 use crate::{commands::command_structs::CommandOptions, errors::ModManError};
 
+#[derive(Debug)]
 struct Package {
     search_term: String,
     source: crate::datatypes::ModSources // If empty, look through both.
@@ -38,8 +39,8 @@ pub fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
     for arg in &options.parameters {
         // Find the position of '@' in the argument
         if let Some(at_pos) = arg.find('@') {
-            let search_term = &arg[..at_pos];
-            let source = &arg[at_pos + 1..];
+            let source = &arg[..at_pos];
+            let search_term = &arg[at_pos + 1..];
             
             if search_term.is_empty() {
                 return Err(ModManError::InvalidCommandArguments(search_term.to_string()));
@@ -47,7 +48,6 @@ pub fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
             if source.is_empty() {
                 return Err(ModManError::InvalidCommandArguments(search_term.to_string()));
             }
-            
             packages.push(match Package::new(search_term.to_string(), Some(source)) {
                 Ok(result) => result,
                 Err(_) => return Err(ModManError::InvalidCommandArguments(search_term.to_string()))
