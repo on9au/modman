@@ -3,7 +3,6 @@ pub enum ModManError {
     CommandNotFound,
     InvalidCommandArguments(String),
     IoError(std::io::Error),
-    NoVersionAfterAt(String),
     NoArguments,
     SerializationError(toml::ser::Error),
     DeserializationError(toml::de::Error),
@@ -16,7 +15,6 @@ impl std::fmt::Display for ModManError {
             ModManError::CommandNotFound => write!(f, "Command not found."),
             ModManError::InvalidCommandArguments(msg) => write!(f, "Invalid command arguments: {}", msg),
             ModManError::IoError(err) => write!(f, "IO error: {}", err),
-            ModManError::NoVersionAfterAt(package) => write!(f, "No version specified for package: {}", package),
             ModManError::NoArguments => write!(f, "No arguments passed."),
             ModManError::SerializationError(err) => write!(f, "Serialization error: {}", err),
             ModManError::DeserializationError(err) => write!(f, "Deserialization error: {}", err),
@@ -40,11 +38,10 @@ impl ModManError {
             ModManError::CommandNotFound => 1,
             ModManError::InvalidCommandArguments(_) => 2,
             ModManError::IoError(_) => 3,
-            ModManError::NoVersionAfterAt(_) => 4,
-            ModManError::NoArguments => 5,
-            ModManError::SerializationError(_) => 6,
-            ModManError::DeserializationError(_) => 7,
-            ModManError::FileNotFound => 8,
+            ModManError::NoArguments => 4,
+            ModManError::SerializationError(_) => 5,
+            ModManError::DeserializationError(_) => 6,
+            ModManError::FileNotFound => 7,
         }
     }
 }
