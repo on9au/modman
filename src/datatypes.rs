@@ -36,6 +36,18 @@ impl fmt::Display for ModSources {
     }
 }
 
+impl std::str::FromStr for ModSources {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "modrinth" => Ok(ModSources::Modrinth),
+            "curseforge" => Ok(ModSources::CurseForge),
+            _ => Err(format!("Invalid source: {}", s)),
+        }
+    }
+}
+
 // Release types enums
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 pub enum ReleaseTypes {

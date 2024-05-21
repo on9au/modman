@@ -1,0 +1,3 @@
+struct ModrinthMod {
+    todo: todo
+}

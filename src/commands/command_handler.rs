@@ -3,7 +3,7 @@ use std::env::Args;
 use colored::Colorize;
 
 use crate::{commands::{
-    init, command_structs, install, version
+    init, command_structs, add, version
 }, errors::ModManError};
 
 pub fn handle_command(mut args: Args) -> Result<(), ModManError>{
@@ -36,8 +36,8 @@ pub fn handle_command(mut args: Args) -> Result<(), ModManError>{
     let command_result: Result<(), ModManError> = match command_options.command.to_lowercase().as_str() {
         "help" => command_help(),
         "version" => version::command_version(),
-        "install" => install::command_install(&command_options),
-        "add" => todo!(),
+        "install" => todo!(),
+        "add" => add::command_add(&command_options),
         "init" => init::command_init(),
         "remove" => todo!(),
         "search" => todo!(),
