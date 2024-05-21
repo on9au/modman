@@ -3,13 +3,13 @@ use std::{fs, path::PathBuf};
 use crate::{errors::ModManError, structs::Config};
 
 pub fn save_config(dir: &PathBuf, config: &Config) -> Result<(), ModManError> {
-    let config_path = dir.join("config.toml");
+    let config_path = dir.join("modman.toml");
     let config_data = toml::to_string_pretty(config).map_err(|e| ModManError::SerializationError(e))?;
     fs::write(config_path, config_data).map_err(|e| ModManError::IoError(e))
 }
 
 pub fn read_config(dir: &PathBuf) -> Result<Config, ModManError> {
-    let config_path = dir.join("config.toml");
+    let config_path = dir.join("modman.toml");
 
     if !config_path.exists() {
         return Err(ModManError::FileNotFound);
