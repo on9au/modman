@@ -61,6 +61,7 @@ pub async fn fetch_modrinth_mod(client: &Client, id_slug: &str, minecraft_versio
 
     match response.status() {
         StatusCode::OK => {
+            // TODO: HANDLE CASES WHERE IT IS EMPTY!!!!!!!!!!!!!!!!!!!!!!!!!!!
             // The request was successful, deserialize the JSON
             let modrinth_mod = response.json::<Vec<ModrinthVersion>>().await?;
             let result = Mod {
