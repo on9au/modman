@@ -88,7 +88,7 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
                 tokio::spawn(async move {
                     match fetch_modrinth_mod(&client, &search_term).await {
                         Ok(result) => result,
-                        Err(e) => break return Err(ModManError::APIFetchError(e)),
+                        Err(e) => return Err(ModManError::APIFetchError(e)),
                     };
                 })
             },
