@@ -6,11 +6,101 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize)]
 pub struct Config {
     pub game_version: String,
-    pub game_loader: String,
+    pub game_loader: GameLoader,
     pub allowed_release_types: Vec<ReleaseTypes>,
     pub mods_folder: std::path::PathBuf,
     pub mods: Vec<Mod>,
 }
+
+// Game loader enums
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum GameLoader {
+    Bukkit,
+    BungeeCord,
+    Canvas,
+    Datapack,
+    Fabric,
+    Folia,
+    Forge,
+    Iris,
+    LiteLoader,
+    Minecraft,
+    ModLoader,
+    NeoForge,
+    OptiFine,
+    Paper,
+    Purpur,
+    Quilt,
+    Rift,
+    Spigot,
+    Sponge,
+    Vanilla,
+    Velocity,
+    Waterfall,
+}
+
+
+impl fmt::Display for GameLoader {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            GameLoader::Bukkit => write!(f, "bukkit"),
+            GameLoader::BungeeCord => write!(f, "bungeecord"),
+            GameLoader::Canvas => write!(f, "canvas"),
+            GameLoader::Datapack => write!(f, "datapack"),
+            GameLoader::Fabric => write!(f, "fabric"),
+            GameLoader::Folia => write!(f, "folia"),
+            GameLoader::Forge => write!(f, "forge"),
+            GameLoader::Iris => write!(f, "iris"),
+            GameLoader::LiteLoader => write!(f, "liteloader"),
+            GameLoader::Minecraft => write!(f, "minecraft"),
+            GameLoader::ModLoader => write!(f, "modloader"),
+            GameLoader::NeoForge => write!(f, "neoforge"),
+            GameLoader::OptiFine => write!(f, "optifine"),
+            GameLoader::Paper => write!(f, "paper"),
+            GameLoader::Purpur => write!(f, "purpur"),
+            GameLoader::Quilt => write!(f, "quilt"),
+            GameLoader::Rift => write!(f, "rift"),
+            GameLoader::Spigot => write!(f, "spigot"),
+            GameLoader::Sponge => write!(f, "sponge"),
+            GameLoader::Vanilla => write!(f, "vanilla"),
+            GameLoader::Velocity => write!(f, "velocity"),
+            GameLoader::Waterfall => write!(f, "waterfall"),
+        }
+    }
+}
+
+impl std::str::FromStr for GameLoader {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "bukkit" => Ok(GameLoader::Bukkit),
+            "bungeecord" => Ok(GameLoader::BungeeCord),
+            "canvas" => Ok(GameLoader::Canvas),
+            "datapack" => Ok(GameLoader::Datapack),
+            "fabric" => Ok(GameLoader::Fabric),
+            "folia" => Ok(GameLoader::Folia),
+            "forge" => Ok(GameLoader::Forge),
+            "iris" => Ok(GameLoader::Iris),
+            "liteloader" => Ok(GameLoader::LiteLoader),
+            "minecraft" => Ok(GameLoader::Minecraft),
+            "modloader" => Ok(GameLoader::ModLoader),
+            "neoforge" => Ok(GameLoader::NeoForge),
+            "optifine" => Ok(GameLoader::OptiFine),
+            "paper" => Ok(GameLoader::Paper),
+            "purpur" => Ok(GameLoader::Purpur),
+            "quilt" => Ok(GameLoader::Quilt),
+            "rift" => Ok(GameLoader::Rift),
+            "spigot" => Ok(GameLoader::Spigot),
+            "sponge" => Ok(GameLoader::Sponge),
+            "vanilla" => Ok(GameLoader::Vanilla),
+            "velocity" => Ok(GameLoader::Velocity),
+            "waterfall" => Ok(GameLoader::Waterfall),
+            _ => Err(format!("Invalid game launcher: {}", s)),
+        }
+    }
+}
+
 
 // Mods struct
 #[derive(Debug, Serialize, Deserialize)]

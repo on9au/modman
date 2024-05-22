@@ -1,11 +1,11 @@
-use std::sync::Arc;
+use std::{io, sync::Arc};
 
 use reqwest::Client;
 
 use colored::Colorize;
 
 use crate::{
-    alert, api::modrinth::fetch_modrinth_mod, commands::command_structs::CommandOptions, confirm, datatypes::{Mod, ModSources}, errors::ModManError, info, APP_USER_AGENT
+    alert, api::modrinth::fetch_modrinth_mod, commands::{command_structs::CommandOptions, init}, confirm, datatypes::{Mod, ModSources}, errors::ModManError, request, APP_USER_AGENT
 };
 
 #[derive(Debug)]
@@ -39,6 +39,26 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
     if options.parameters.is_empty() {
         return Err(ModManError::NoArguments);
     }
+
+    let current_directory = match crate::utils::get_current_working_dir() {
+        Ok(result) => result,
+        Err(e) => return Err(ModManError::IoError(e)),
+    };
+
+    let config = match crate::config::read_config(&current_directory) {
+        Ok(result) => result,
+        Err(ModManError::FileNotFound) => {
+            alert!("No config file (modman.toml) found for this directory!");
+            alert!("Please run 'modman init' to generate a config file.");
+            return Err(ModManError::FileNotFound)
+        },
+        Err(ModManError::DeserializationError(e)) => {
+            alert!("Either config file modman.toml has incorrect information, or is corrupt. Please modify modman.toml, or");
+            alert!("delete it to reset the configuration.");
+            return Err(ModManError::DeserializationError(e))
+        }
+        Err(e) => return Err(e)
+    };
 
     // Define a vec of packages to be added.
     let mut packages: Vec<Package> = Vec::with_capacity(options.parameters.len());
@@ -86,9 +106,11 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
         let task: tokio::task::JoinHandle<Result<Mod, ModManError>> = match package.source {
             ModSources::Modrinth => {
                 let search_term = package.search_term.clone();
+                let game_version = config.game_version.clone();
+                let game_loader = config.game_loader.clone();
                 // Async fetching.
                 tokio::spawn(async move {
-                    match fetch_modrinth_mod(&client, &search_term).await {
+                    match fetch_modrinth_mod(&client, &search_term, &game_version, &game_loader).await {
                         Ok(result) => Ok(result),
                         Err(err) => Err(ModManError::CannotFindMod(format!("{}", err))),
                     }

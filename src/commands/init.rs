@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::io::{self, Write};
+use std::str::FromStr;
 
 use colored::Colorize;
 use crossterm::cursor::MoveToPreviousLine;
@@ -7,13 +8,13 @@ use crossterm::execute;
 use crossterm::terminal::{Clear, ClearType};
 
 use crate::errors::ModManError;
-use crate::datatypes::{Config, ReleaseTypes};
+use crate::datatypes::{Config, ReleaseTypes, GameLoader};
 use crate::{alert, confirm, info, request, requestconfirm};
 use crate::utils::get_current_working_dir;
 
 pub fn command_init() -> Result<(), ModManError> {
     let mut game_version = String::new();
-    let mut game_loader = String::new();
+    let mut game_loader: Option<GameLoader> = None;
     let mut allowed_release_types: Vec<ReleaseTypes> = Vec::new();
     let mut mods_folder = String::new();
 
@@ -30,6 +31,11 @@ pub fn command_init() -> Result<(), ModManError> {
             alert!("To prevent this, press '^C' (Ctrl + C) to exit.")
         },
         Err(ModManError::FileNotFound) => {},
+        Err(ModManError::DeserializationError(e)) => {
+            alert!("Either config file modman.toml has incorrect information, or is corrupt. Please modify modman.toml, or");
+            alert!("delete it to reset the configuration.");
+            return Err(ModManError::DeserializationError(e))
+        }
         Err(e) => return Err(e)
     }
 
@@ -48,15 +54,27 @@ pub fn command_init() -> Result<(), ModManError> {
 
     // Ask user for game_loader
     loop {
-        request!("Loader of Minecraft", "[fabric, quilt, forge]");
-        io::stdin().read_line(&mut game_loader).unwrap();
-        game_loader = game_loader.trim().to_owned();
+        request!("Loader of Minecraft", "[fabric, quilt, forge, etc.]");
+        let mut input = String::new();
+        io::stdin().read_line(&mut input).unwrap();
+        input = input.trim().to_owned().to_lowercase();
 
-        if confirm_input(&game_loader) {
-            break;
-        } else {
-            game_loader = String::new();
+        let mut is_valid: bool = true;
+        match GameLoader::from_str(&input) {
+            Ok(result) => {
+                game_loader = Some(result);
+            },
+            Err(_) => {
+                println!(" {} Invalid value '{}' detected. Please enter a valid Minecraft loader.", "!".red().bold(), input.bold());
+                is_valid = false;
+            }
+        };
+        if is_valid {
+            if confirm_input(&game_loader.clone().unwrap().to_string()) {
+                break;
+            }
         }
+        input.clear();
     }
 
     // Ask user for default allowed release types
@@ -122,7 +140,7 @@ pub fn command_init() -> Result<(), ModManError> {
     confirm!("Saving configuration. These settings will be used when you run modman in this directory.");
     
     let config = Config {
-        game_loader,
+        game_loader: game_loader.expect("Game Loader variable was empty somehow during init command! Please report this issue."),
         game_version,
         allowed_release_types: allowed_release_types,
         mods_folder: std::path::PathBuf::from(mods_folder),
