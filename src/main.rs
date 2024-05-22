@@ -1,4 +1,5 @@
 mod commands;
+mod api;
 mod config;
 mod errors;
 mod utils;
@@ -7,10 +8,18 @@ mod datatypes;
 use std::{env, process};
 use commands::command_handler;
 
-pub const USER_AGENT: &str = "ModMan/0.1.0 (https://github.com/nulluser0/modman)";
+pub static APP_USER_AGENT: &str = concat!(
+    env!("CARGO_PKG_AUTHORS"),
+    "/",
+    env!("CARGO_PKG_NAME"),
+    "/",
+    env!("CARGO_PKG_VERSION"),
+    ""
+);
 
-fn main() {
-    let handler = command_handler::handle_command(env::args());
+#[tokio::main]
+async fn main() {
+   let handler = command_handler::handle_command(env::args()).await;
 
     match handler {
         Ok(()) => process::exit(0),

@@ -6,7 +6,7 @@ use crate::{commands::{
     init, command_structs, add, version
 }, errors::ModManError};
 
-pub fn handle_command(mut args: Args) -> Result<(), ModManError>{
+pub async fn handle_command(mut args: Args) -> Result<(), ModManError>{
     args.next(); // Skip first args, which is the program binary.
 
     // Parse the command and its arguments
@@ -37,7 +37,7 @@ pub fn handle_command(mut args: Args) -> Result<(), ModManError>{
         "help" => command_help(),
         "version" => version::command_version(),
         "install" => todo!(),
-        "add" => add::command_add(&command_options),
+        "add" => add::command_add(&command_options).await,
         "init" => init::command_init(),
         "remove" => todo!(),
         "search" => todo!(),
