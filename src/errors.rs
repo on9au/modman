@@ -8,7 +8,8 @@ pub enum ModManError {
     DeserializationError(toml::de::Error),
     FileNotFound,
     ReqwestError(reqwest::Error),
-    APIFetchError(reqwest::Error),
+    APIFetchError(String),
+    CannotFindMod(String),
 }
 
 impl std::fmt::Display for ModManError {
@@ -23,6 +24,7 @@ impl std::fmt::Display for ModManError {
             ModManError::FileNotFound => write!(f, "File not found."),
             ModManError::ReqwestError(err) => write!(f, "Error with API client (Reqwest): {}", err),
             ModManError::APIFetchError(err) => write!(f, "Error with API request: {}", err),
+            ModManError::CannotFindMod(err) => write!(f, "Cannot find mod:       '{}'", err),
         }
     }
 }
@@ -48,6 +50,7 @@ impl ModManError {
             ModManError::FileNotFound => 7,
             ModManError::ReqwestError(_) => 8,
             ModManError::APIFetchError(_) => 9,
+            ModManError::CannotFindMod(_) => 10,
         }
     }
 }

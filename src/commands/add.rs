@@ -1,9 +1,11 @@
+use std::sync::Arc;
+
+use reqwest::Client;
+
+use colored::Colorize;
+
 use crate::{
-    api::modrinth::fetch_modrinth_mod,
-    commands::command_structs::CommandOptions,
-    datatypes::{Mod, ModSources},
-    errors::ModManError,
-    APP_USER_AGENT
+    alert, api::modrinth::fetch_modrinth_mod, commands::command_structs::CommandOptions, confirm, datatypes::{Mod, ModSources}, errors::ModManError, info, APP_USER_AGENT
 };
 
 #[derive(Debug)]
@@ -72,32 +74,44 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
         }
     }
 
-    let client = match reqwest::Client::builder()
+    let client = Arc::new(match Client::builder()
         .user_agent(APP_USER_AGENT)
         .build() {
             Ok(result) => result,
             Err(e) => return Err(ModManError::ReqwestError(e)),
-        };
+        });
 
     for package in packages {
-        let client = client.clone();
-        let task: tokio::task::JoinHandle<Mod> = match package.source {
+        let client = Arc::clone(&client);
+        let task: tokio::task::JoinHandle<Result<Mod, ModManError>> = match package.source {
             ModSources::Modrinth => {
                 let search_term = package.search_term.clone();
                 // Async fetching.
                 tokio::spawn(async move {
                     match fetch_modrinth_mod(&client, &search_term).await {
-                        Ok(result) => result,
-                        Err(e) => return Err(ModManError::APIFetchError(e)),
-                    };
+                        Ok(result) => Ok(result),
+                        Err(err) => Err(ModManError::CannotFindMod(format!("{}", err))),
+                    }
                 })
-            },
-            ModSources::CurseForge => unimplemented!(),
+            }
+            ModSources::CurseForge => unimplemented!(), // Handle CurseForge fetch here
         };
         tasks.push(task);
     }
 
-    let results = futures::future::join_all(tasks).await;
+    let results: Vec<Result<Mod, ModManError>> = futures::future::join_all(tasks).await.into_iter().map(|res| {
+        res.unwrap_or_else(|join_error| Err(ModManError::APIFetchError(format!("Task failed: {:?}", join_error))))
+    }).collect();
+    // Handle the results
+    for result in results {
+        match result {
+            Ok(mod_result) => {
+                let message = "Found mod:             '".to_string() + &mod_result.name + "'";
+                confirm!(message);
+            }
+            Err(e) => alert!(e.to_string()),
+        }
+    }
 
 
     Ok(())

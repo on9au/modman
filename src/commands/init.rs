@@ -8,6 +8,7 @@ use crossterm::terminal::{Clear, ClearType};
 
 use crate::errors::ModManError;
 use crate::datatypes::{Config, ReleaseTypes};
+use crate::{alert, confirm, info, request, requestconfirm};
 use crate::utils::get_current_working_dir;
 
 pub fn command_init() -> Result<(), ModManError> {
@@ -21,15 +22,12 @@ pub fn command_init() -> Result<(), ModManError> {
         Err(e) => return Err(ModManError::IoError(e))
     };
 
-    println!(" {} {}: {}", "i".cyan().bold(), "Current directory".bold(), current_dir.display().to_string().bright_black());
+    info!("Current directory:", current_dir.display().to_string());
 
     match crate::config::read_config(&current_dir) {
         Ok(_) => {
-            println!(" {} {} {} {}", "!".red().bold(),
-                "Found existing modman.toml file! 'modman init' will".red().bold(),
-                "ERASE".red().bold().underline(), "modman.toml, thus removing the mods list!".red().bold()
-            );
-            println!("   | {}", "To prevent this, press '^C' (Ctrl + C) to exit.".red());
+            alert!("Found existing modman.toml file! 'modman init' will ERASE modman.toml, thus removing the mods list!");
+            alert!("To prevent this, press '^C' (Ctrl + C) to exit.")
         },
         Err(ModManError::FileNotFound) => {},
         Err(e) => return Err(e)
@@ -37,8 +35,7 @@ pub fn command_init() -> Result<(), ModManError> {
 
     // Ask user for version
     loop {
-        print!(" {} {} {} ", "?".yellow().bold(), "Version of Minecraft".bold(), ">".bright_black());
-        io::stdout().flush().unwrap();
+        request!("Version of Minecraft", "[Any valid Minecraft version]");
         io::stdin().read_line(&mut game_version).unwrap();
         game_version = game_version.trim().to_owned();
 
@@ -51,8 +48,7 @@ pub fn command_init() -> Result<(), ModManError> {
 
     // Ask user for game_loader
     loop {
-        print!(" {} {} {} ", "?".yellow().bold(), "Loader of Minecraft".bold(), "[fabric, quilt, forge] >".bright_black());
-        io::stdout().flush().unwrap();
+        request!("Loader of Minecraft", "[fabric, quilt, forge]");
         io::stdin().read_line(&mut game_loader).unwrap();
         game_loader = game_loader.trim().to_owned();
 
@@ -65,8 +61,7 @@ pub fn command_init() -> Result<(), ModManError> {
 
     // Ask user for default allowed release types
     loop {
-        print!(" {} {} {} ", "?".yellow().bold(), "Default Allowed Release Types (alpha, beta, release) (seperated by comma)".bold(), "[Default: 'alpha, beta, release'] >".bright_black());
-        io::stdout().flush().unwrap();
+        request!("Default Allowed Release Types (alpha, beta, release) (seperated by comma)", "[Default: 'alpha, beta, release']");
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
         input = input.trim().to_owned();
@@ -109,8 +104,7 @@ pub fn command_init() -> Result<(), ModManError> {
 
     // Ask user for mods folder
     loop {
-        print!(" {} {} {} ", "?".yellow().bold(), "Mods Folder".bold(), "[Default is './mods'] >".bright_black());
-        io::stdout().flush().unwrap();
+        request!("Mods Folder", "[Default is './mods']");
         io::stdin().read_line(&mut mods_folder).unwrap();
         mods_folder = mods_folder.trim().to_owned();
 
@@ -125,8 +119,7 @@ pub fn command_init() -> Result<(), ModManError> {
         }
     }
 
-    println!("{} {}", "OK".green().bold(), "Saving configuration. These settings will be used when you run modman in this directory.".bold());
-    println!("   {} {} {} {}", "To reset configuration, run".bright_black(), "'modman init'".bright_black().bold(), "or modify".bright_black(), "modman.toml".bright_black().bold());
+    confirm!("Saving configuration. These settings will be used when you run modman in this directory.");
     
     let config = Config {
         game_loader,
@@ -142,8 +135,7 @@ pub fn command_init() -> Result<(), ModManError> {
 
 fn confirm_input(input: &str) -> bool {
     // Ask for confirmation
-    print!("   | {}{}{}{} ", "You entered: '".bold(), input.yellow().bold(), "'. Is this correct? ".bold(), "[y/N] >".bright_black());
-    io::stdout().flush().unwrap();
+    requestconfirm!("Is this correct:", input, "[y/N]");
 
     let mut confirmation = String::new();
     io::stdin().read_line(&mut confirmation).unwrap();

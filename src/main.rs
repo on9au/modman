@@ -4,6 +4,7 @@ mod config;
 mod errors;
 mod utils;
 mod datatypes;
+mod macros;
 
 use std::{env, process};
 use commands::command_handler;

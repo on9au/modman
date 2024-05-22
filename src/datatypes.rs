@@ -13,7 +13,7 @@ pub struct Config {
 }
 
 // Mods struct
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Mod {
     pub source: ModSources,
     pub id: String,
