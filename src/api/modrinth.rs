@@ -15,9 +15,7 @@ struct ModrinthVersion {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct ModrinthDependency {
-    pub version_id: Option<String>,
     pub project_id: String,
-    pub file_name: Option<String>,
     pub dependency_type: DependencyType,
 }
 

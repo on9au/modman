@@ -183,9 +183,7 @@ pub struct LockMod {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LockDependency {
-    pub version_id: Option<String>,
     pub project_id: String,
-    pub file_name: Option<String>,
     pub dependency_type: DependencyType,
 }
 
@@ -214,9 +212,7 @@ impl std::str::FromStr for DependencyType {
 impl From<crate::api::modrinth::ModrinthDependency> for LockDependency {
     fn from(dep: crate::api::modrinth::ModrinthDependency) -> Self {
         LockDependency {
-            version_id: dep.version_id,
             project_id: dep.project_id,
-            file_name: dep.file_name,
             dependency_type: dep.dependency_type,
         }
     }
