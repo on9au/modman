@@ -16,7 +16,7 @@ struct ModrinthVersion {
 #[derive(Debug, Deserialize, Clone)]
 pub struct ModrinthDependency {
     pub project_id: String,
-    pub dependency_type: DependencyType,
+    pub dependency_type: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -71,10 +71,10 @@ pub async fn fetch_modrinth_mod(client: &Client, id_slug: &str, minecraft_versio
 
 fn convert_modrinth_to_lockmod(modrinth_version: &ModrinthVersion) -> Result<LockMod, Box<dyn std::error::Error>> {
     if let Some(first_file) = modrinth_version.files.first() {
-        let dependencies: Vec<LockDependency> = <Vec<ModrinthDependency> as Clone>::clone(&modrinth_version
-            .dependencies)
-            .into_iter()
-            .map(LockDependency::from)
+        let dependencies: Result<Vec<LockDependency>, String> = modrinth_version
+            .dependencies
+            .iter()
+            .map(|dep| dep.clone().try_into())
             .collect();
 
         let lock_mod = LockMod {
@@ -85,7 +85,7 @@ fn convert_modrinth_to_lockmod(modrinth_version: &ModrinthVersion) -> Result<Loc
             release_date: modrinth_version.date_published.clone(),
             sha512: first_file.hashes.sha512.clone(),
             download_url: first_file.url.clone(),
-            dependencies,
+            dependencies: dependencies?,
             size: first_file.size.clone(),
         };
 

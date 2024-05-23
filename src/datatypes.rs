@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 
@@ -209,11 +209,13 @@ impl std::str::FromStr for DependencyType {
     }
 }
 
-impl From<crate::api::modrinth::ModrinthDependency> for LockDependency {
-    fn from(dep: crate::api::modrinth::ModrinthDependency) -> Self {
-        LockDependency {
+impl TryFrom<crate::api::modrinth::ModrinthDependency> for LockDependency {
+    type Error = String;
+
+    fn try_from(dep: crate::api::modrinth::ModrinthDependency) -> Result<Self, Self::Error> {
+        Ok(LockDependency {
             project_id: dep.project_id,
-            dependency_type: dep.dependency_type,
-        }
+            dependency_type: DependencyType::from_str(&dep.dependency_type)?,
+        })
     }
 }
