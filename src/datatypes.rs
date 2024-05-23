@@ -166,3 +166,15 @@ pub fn format_release_types(release_types: &[ReleaseTypes]) -> String {
     }
     formatted
 }
+
+// Lockfile:
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LockMod {
+    pub name: String,
+    pub source: ModSources,
+    pub id: String,
+    pub file_name: String,
+    pub release_date: String,
+    pub sha512: String,
+    pub download_url: String,
+}

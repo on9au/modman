@@ -5,7 +5,7 @@ use reqwest::Client;
 use colored::Colorize;
 
 use crate::{
-    actionheader, alert, api::modrinth::fetch_modrinth_mod, commands::{command_structs::CommandOptions, init}, confirm, datatypes::{Mod, ModSources}, errors::ModManError, info, request, APP_USER_AGENT
+    actionheader, alert, api::modrinth::fetch_modrinth_mod, commands::{command_structs::CommandOptions, init}, confirm, datatypes::{LockMod, Mod, ModSources}, errors::ModManError, info, request, APP_USER_AGENT
 };
 
 #[derive(Debug)]
@@ -110,7 +110,7 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
 
     for package in packages {
         let client = Arc::clone(&client);
-        let task: tokio::task::JoinHandle<Result<Mod, ModManError>> = match package.source {
+        let task: tokio::task::JoinHandle<Result<LockMod, ModManError>> = match package.source {
             ModSources::Modrinth => {
                 let search_term = package.search_term.clone();
                 let game_version = config.game_version.clone();
@@ -128,7 +128,7 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
         tasks.push(task);
     }
 
-    let results: Vec<Result<Mod, ModManError>> = futures::future::join_all(tasks).await.into_iter().map(|res| {
+    let results: Vec<Result<LockMod, ModManError>> = futures::future::join_all(tasks).await.into_iter().map(|res| {
         res.unwrap_or_else(|join_error| Err(ModManError::APIFetchError(format!("Task failed: {:?}", join_error))))
     }).collect();
     // Handle the results
