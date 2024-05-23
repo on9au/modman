@@ -111,7 +111,7 @@ pub struct Mod {
 }
 
 // Mod sources
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum ModSources {
     Modrinth,
     CurseForge,
@@ -168,7 +168,7 @@ pub fn format_release_types(release_types: &[ReleaseTypes]) -> String {
 }
 
 // Lockfile:
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LockMod {
     pub name: String,
     pub source: ModSources,
@@ -181,8 +181,9 @@ pub struct LockMod {
     pub size: u64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LockDependency {
+    pub source: ModSources,
     pub project_id: String,
     pub dependency_type: DependencyType,
 }
@@ -216,6 +217,7 @@ impl TryFrom<crate::api::modrinth::ModrinthDependency> for LockDependency {
         Ok(LockDependency {
             project_id: dep.project_id,
             dependency_type: DependencyType::from_str(&dep.dependency_type)?,
+            source: ModSources::Modrinth,
         })
     }
 }

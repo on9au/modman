@@ -1,12 +1,14 @@
-use std::sync::Arc;
+use std::{pin::Pin, sync::Arc};
 
 use reqwest::Client;
 
 use colored::Colorize;
 
 use crate::{
-    actionheader, alert, api::modrinth::fetch_modrinth_mod, commands::command_structs::CommandOptions, confirm, datatypes::{LockMod, ModSources}, errors::ModManError, info, APP_USER_AGENT
+    actionheader, alert, api::modrinth::fetch_modrinth_mod, commands::command_structs::CommandOptions, confirm, datatypes::{DependencyType, GameLoader, LockDependency, LockMod, ModSources}, errors::ModManError, info, request, APP_USER_AGENT
 };
+
+use std::io::{self, Write};
 
 #[derive(Debug)]
 struct Package {
@@ -46,8 +48,6 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
         info!("'--ignore-dependencies' tag detected. Ignoring dependencies...");
     }
 
-    // TODO: Handle the ignore dependencies flag.
-
     let current_directory = match crate::utils::get_current_working_dir() {
         Ok(result) => result,
         Err(e) => return Err(ModManError::IoError(e)),
@@ -80,6 +80,7 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
 
     // Define a vec of matches to be added. Added when interacting with Modrinth/CurseForge API
     let mut mod_matches = Vec::new();
+    let mut mods_to_install: Vec<LockMod> = Vec::new();
 
     // For each argument (mod/package), parse into Package struct.
     for arg in &options.parameters {
@@ -145,13 +146,117 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
             Ok(mod_result) => {
                 let message = "Found mod:             '".to_string() + &mod_result.name + "'";
                 confirm!(message);
+                if !mods_to_install.iter().any(|m| m.id == mod_result.id) {
+                    mods_to_install.push(mod_result.clone());
+                    if ignore_dependencies {
+                        break;
+                    }
+                    match handle_dependencies(&client, &mut mods_to_install, &mod_result.dependencies, &config.game_version, &config.game_loader).await {
+                        Ok(_) => {},
+                        Err(e) => {
+                            let message = "Cannot find mod:       '".to_string() + &e.to_string() + "'";
+                            alert!(message)
+                        },
+                    };
+                }
             }
             Err(e) => alert!(e.to_string()),
         }
     }
 
-    // TODO: Dependency Management
+    // Transaction prompt:
+    print!("\n");
+    actionheader!("Get Mod(s) Transaction");
+    info!("Mods to be installed:");
+    for mod_result in &mods_to_install {
+        println!("    {}", mod_result.name);
+    }
+    print!("\n");
+    info!("Total download size: ", calculate_total_size(&mods_to_install));
+    request!("Begin download/transaction?", "[Y/n]");
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input).unwrap();
+    input = input.trim().to_owned();
 
 
     Ok(())
+}
+
+async fn handle_dependencies(
+    client: &Client,
+    mods_to_install: &mut Vec<LockMod>,
+    dependencies: &[LockDependency],
+    minecraft_version: &String,
+    loader: &GameLoader,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut tasks = Vec::new();
+
+    for dep in dependencies {
+        if !mods_to_install.iter().any(|m| m.id == dep.project_id) {
+            match dep.dependency_type {
+                DependencyType::Required => {
+                    let client = client.clone();
+                    let dep_id = dep.project_id.clone();
+                    let minecraft_version = minecraft_version.clone();
+                    let loader = loader.clone();
+
+                    tasks.push(tokio::spawn(async move {
+                        fetch_modrinth_mod(&client, &dep_id, &minecraft_version, &loader).await
+                    }));
+                }
+                DependencyType::Optional => {
+                    // Optional dependencies can be skipped or handled differently if needed
+                }
+                DependencyType::Incompatible => {
+                    return Err(Box::new(ModManError::IncompatibleDependency(format!(
+                        "Incompatible mod: {}",
+                        dep.project_id
+                    ).into())));
+                }
+                DependencyType::Embedded => {
+                    // Handle embedded dependencies if needed
+                }
+            }
+        }
+    }
+
+    let results = futures::future::join_all(tasks).await;
+    for result in results {
+        match result {
+            Ok(Ok(dep_mod)) => {
+                if !mods_to_install.iter().any(|m| m.id == dep_mod.id) {
+                    mods_to_install.push(dep_mod.clone());
+                    let fut = handle_dependencies(client, mods_to_install, &dep_mod.dependencies, minecraft_version, loader);
+                    Pin::from(Box::new(fut)).await?;
+                }
+            }
+            Ok(Err(e)) => {
+                return Err(e);
+            }
+            Err(join_error) => {
+                return Err(Box::new(ModManError::APIFetchError(format!(
+                    "Task failed: {:?}",
+                    join_error
+                ))));
+            }
+        }
+    }
+    Ok(())
+}
+
+fn calculate_total_size(mods_to_install: &[LockMod]) -> String {
+    let total_size: u64 = mods_to_install.iter().map(|mod_| mod_.size).sum();
+    let mut total_size_str = String::new();
+
+    if total_size < 1024 {
+        total_size_str.push_str(&format!("{} B", total_size));
+    } else if total_size < 1024 * 1024 {
+        total_size_str.push_str(&format!("{:.2} KB", total_size as f64 / 1024.0));
+    } else if total_size < 1024 * 1024 * 1024 {
+        total_size_str.push_str(&format!("{:.2} MB", total_size as f64 / (1024.0 * 1024.0)));
+    } else {
+        total_size_str.push_str(&format!("{:.2} GB", total_size as f64 / (1024.0 * 1024.0 * 1024.0)));
+    }
+
+    total_size_str
 }

@@ -10,6 +10,7 @@ pub enum ModManError {
     ReqwestError(reqwest::Error),
     APIFetchError(String),
     CannotFindMod(String),
+    IncompatibleDependency(Box<dyn std::error::Error + Send + Sync>),
 }
 
 impl std::fmt::Display for ModManError {
@@ -25,6 +26,7 @@ impl std::fmt::Display for ModManError {
             ModManError::ReqwestError(err) => write!(f, "Error with API client (Reqwest): {}", err),
             ModManError::APIFetchError(err) => write!(f, "Error with API request: {}", err),
             ModManError::CannotFindMod(err) => write!(f, "Cannot find mod:       '{}'", err),
+            ModManError::IncompatibleDependency(err) => write!(f, "Incompatible mods:       '{}'", err),
         }
     }
 }
@@ -51,6 +53,7 @@ impl ModManError {
             ModManError::ReqwestError(_) => 8,
             ModManError::APIFetchError(_) => 9,
             ModManError::CannotFindMod(_) => 10,
+            ModManError::IncompatibleDependency(_) => 11,
         }
     }
 }

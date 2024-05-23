@@ -1,7 +1,7 @@
 use reqwest::{Client, StatusCode};
 use serde::Deserialize;
 
-use crate::datatypes::{DependencyType, GameLoader, LockDependency, LockMod, ModSources};
+use crate::datatypes::{GameLoader, LockDependency, LockMod, ModSources};
 
 const MODRINTH_API_BASE: &str = "https://api.modrinth.com";
 #[derive(Debug, Deserialize)]
@@ -33,7 +33,7 @@ struct Hashes {
     sha512: String,
 }
 
-pub async fn fetch_modrinth_mod(client: &Client, id_slug: &str, minecraft_version: &String, loader: &GameLoader) -> Result<LockMod, Box<dyn std::error::Error>> {
+pub async fn fetch_modrinth_mod(client: &Client, id_slug: &str, minecraft_version: &String, loader: &GameLoader) -> Result<LockMod, Box<dyn std::error::Error + Send + Sync>> {
     let url = format!("{}/v2/project/{}/version?game_versions=[\"{}\"]&loaders=[\"{}\"]", MODRINTH_API_BASE, id_slug, minecraft_version, loader);
     let response = match client.get(&url).send().await {
         Ok(resp) => resp,
@@ -45,7 +45,6 @@ pub async fn fetch_modrinth_mod(client: &Client, id_slug: &str, minecraft_versio
 
     match response.status() {
         StatusCode::OK => {
-            // TODO: HANDLE CASES WHERE IT IS EMPTY!!!!!!!!!!!!!!!!!!!!!!!!!!!
             // The request was successful, deserialize the JSON
             let modrinth_mod = response.json::<Vec<ModrinthVersion>>().await?;
             if let Some(first_mod) = modrinth_mod.first() {
@@ -69,7 +68,7 @@ pub async fn fetch_modrinth_mod(client: &Client, id_slug: &str, minecraft_versio
     }
 }
 
-fn convert_modrinth_to_lockmod(modrinth_version: &ModrinthVersion) -> Result<LockMod, Box<dyn std::error::Error>> {
+fn convert_modrinth_to_lockmod(modrinth_version: &ModrinthVersion) -> Result<LockMod, Box<dyn std::error::Error + Send + Sync>> {
     if let Some(first_file) = modrinth_version.files.first() {
         let dependencies: Result<Vec<LockDependency>, String> = modrinth_version
             .dependencies
