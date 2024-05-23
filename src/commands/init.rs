@@ -32,9 +32,11 @@ pub fn command_init() -> Result<(), ModManError> {
         },
         Err(ModManError::FileNotFound) => {},
         Err(ModManError::DeserializationError(e)) => {
-            alert!("Either config file modman.toml has incorrect information, or is corrupt. Please modify modman.toml, or");
-            alert!("delete it to reset the configuration.");
-            return Err(ModManError::DeserializationError(e))
+            alert!("Either config file modman.toml has incorrect information, or is corrupt.");
+            alert!("'modman init' will RESET the broken config file.");
+            alert!("It might be a good idea to create a backup of the config file if you have mods saved there.");
+            println!("   {} {}", "The error was:".bright_red(), e.to_string());
+            info!("Continue below with modman init to reset broken config...");
         }
         Err(e) => return Err(e)
     }
