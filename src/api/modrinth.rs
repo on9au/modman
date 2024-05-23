@@ -46,7 +46,6 @@ struct File {
 #[derive(Debug, Deserialize)]
 struct Hashes {
     sha512: String,
-    sha1: String,
 }
 
 pub async fn fetch_modrinth_mod(client: &Client, id_slug: &str, minecraft_version: &String, loader: &GameLoader) -> Result<Mod, Box<dyn std::error::Error>> {
