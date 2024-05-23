@@ -63,12 +63,18 @@ pub async fn fetch_modrinth_mod(client: &Client, id_slug: &str, minecraft_versio
             // TODO: HANDLE CASES WHERE IT IS EMPTY!!!!!!!!!!!!!!!!!!!!!!!!!!!
             // The request was successful, deserialize the JSON
             let modrinth_mod = response.json::<Vec<ModrinthVersion>>().await?;
-            let result = Mod {
-                source: ModSources::Modrinth,
-                id: modrinth_mod.first().unwrap().project_id.clone(),
-                name: modrinth_mod.first().unwrap().name.clone(),
-            };
-            Ok(result)
+            if let Some(first_mod) = modrinth_mod.first() {
+                let result = Mod {
+                    source: ModSources::Modrinth,
+                    id: first_mod.project_id.clone(),
+                    name: first_mod.name.clone(),
+                };
+                Ok(result)
+            } else {
+                // Handle empty array case
+                let error_msg = format!("{}", id_slug);
+                Err(error_msg.into())
+            }
         }
         StatusCode::NOT_FOUND => {
             // The resource was not found (404)
