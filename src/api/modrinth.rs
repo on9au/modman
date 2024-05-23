@@ -51,13 +51,13 @@ pub async fn fetch_modrinth_mod(client: &Client, id_slug: &str, minecraft_versio
                 convert_modrinth_to_lockmod(first_mod)
             } else {
                 // Handle empty array case
-                let error_msg = format!("{}", id_slug);
+                let error_msg = format!("( No Mod File ) {}", id_slug);
                 Err(error_msg.into())
             }
         }
         StatusCode::NOT_FOUND => {
             // The resource was not found (404)
-            let error_msg = format!("{}", id_slug);
+            let error_msg = format!("(404 Not Found) {}", id_slug);
             Err(error_msg.into())
         }
         _ => {
