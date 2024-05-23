@@ -20,7 +20,12 @@ pub static APP_USER_AGENT: &str = concat!(
 
 #[tokio::main]
 async fn main() {
-   let handler = command_handler::handle_command(env::args()).await;
+    match color_eyre::install() {
+        Ok(_) => {},
+        Err(e) => panic!("{}", e)
+    };
+
+    let handler = command_handler::handle_command(env::args()).await;
 
     match handler {
         Ok(()) => process::exit(0),

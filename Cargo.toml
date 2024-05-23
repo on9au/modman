@@ -6,6 +6,7 @@ authors = ["A0"]
 description = "Minecraft Mod Manager CLI, uses Modrinth and CurseForge."
 
 [dependencies]
+color-eyre = "0.6.3"
 colored = "2.1.0"
 crossterm = "0.27.0"
 futures = "0.3.30"
@@ -13,3 +14,6 @@ reqwest = { version = "0.12.4", features = ["json"] }
 serde = { version = "1.0.202", features = ["derive"] }
 tokio = { version = "1.37.0", features = ["macros", "rt-multi-thread"] }
 toml = "0.8.13"
+
+[profile.dev.package.backtrace]
+opt-level = 3
