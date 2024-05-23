@@ -150,6 +150,8 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
         }
     }
 
+    // TODO: Dependency Management
+
 
     Ok(())
 }
