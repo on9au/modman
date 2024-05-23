@@ -1,11 +1,11 @@
-use std::{io, sync::Arc};
+use std::sync::Arc;
 
 use reqwest::Client;
 
 use colored::Colorize;
 
 use crate::{
-    actionheader, alert, api::modrinth::fetch_modrinth_mod, commands::{command_structs::CommandOptions, init}, confirm, datatypes::{LockMod, Mod, ModSources}, errors::ModManError, info, request, APP_USER_AGENT
+    actionheader, alert, api::modrinth::fetch_modrinth_mod, commands::command_structs::CommandOptions, confirm, datatypes::{LockMod, ModSources}, errors::ModManError, info, APP_USER_AGENT
 };
 
 #[derive(Debug)]
@@ -70,8 +70,8 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
     // Define a vec of packages to be added.
     let mut packages: Vec<Package> = Vec::with_capacity(options.parameters.len());
 
-    // Define a vec of tasks to be added. Added when interacting with Modrinth/CurseForge API
-    let mut tasks = Vec::new();
+    // Define a vec of matches to be added. Added when interacting with Modrinth/CurseForge API
+    let mut mod_matches = Vec::new();
 
     // For each argument (mod/package), parse into Package struct.
     for arg in &options.parameters {
@@ -110,7 +110,7 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
 
     for package in packages {
         let client = Arc::clone(&client);
-        let task: tokio::task::JoinHandle<Result<LockMod, ModManError>> = match package.source {
+        let mod_match: tokio::task::JoinHandle<Result<LockMod, ModManError>> = match package.source {
             ModSources::Modrinth => {
                 let search_term = package.search_term.clone();
                 let game_version = config.game_version.clone();
@@ -125,10 +125,10 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
             }
             ModSources::CurseForge => unimplemented!(), // Handle CurseForge fetch here
         };
-        tasks.push(task);
+        mod_matches.push(mod_match);
     }
 
-    let results: Vec<Result<LockMod, ModManError>> = futures::future::join_all(tasks).await.into_iter().map(|res| {
+    let results: Vec<Result<LockMod, ModManError>> = futures::future::join_all(mod_matches).await.into_iter().map(|res| {
         res.unwrap_or_else(|join_error| Err(ModManError::APIFetchError(format!("Task failed: {:?}", join_error))))
     }).collect();
     // Handle the results

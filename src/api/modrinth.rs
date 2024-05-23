@@ -1,36 +1,24 @@
 use reqwest::{Client, StatusCode};
 use serde::Deserialize;
 
-use crate::datatypes::{GameLoader, LockMod, Mod, ModSources};
+use crate::datatypes::{DependencyType, GameLoader, LockDependency, LockMod, ModSources};
 
 const MODRINTH_API_BASE: &str = "https://api.modrinth.com";
 #[derive(Debug, Deserialize)]
 struct ModrinthVersion {
     name: String,
-    // version_number: String,
-    // changelog: String,
-    // dependencies: Vec<Dependency>,
-    // game_versions: Vec<String>,
-    // version_type: String,
-    // loaders: Vec<String>,
-    // featured: bool,
-    // status: String,
-    // requested_status: String,
-    // id: String,
+    dependencies: Vec<ModrinthDependency>,
     project_id: String,
-    // author_id: String,
     date_published: String,
-    // downloads: u64,
-    // changelog_url: Option<String>,
     files: Vec<File>,
 }
 
-#[derive(Debug, Deserialize)]
-struct Dependency {
-    version_id: Option<String>,
-    project_id: String,
-    file_name: Option<String>,
-    dependency_type: String,
+#[derive(Debug, Deserialize, Clone)]
+pub struct ModrinthDependency {
+    pub version_id: Option<String>,
+    pub project_id: String,
+    pub file_name: Option<String>,
+    pub dependency_type: DependencyType,
 }
 
 #[derive(Debug, Deserialize)]
@@ -40,7 +28,6 @@ struct File {
     filename: String,
     // primary: bool,
     size: u64,
-    file_type: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -64,16 +51,7 @@ pub async fn fetch_modrinth_mod(client: &Client, id_slug: &str, minecraft_versio
             // The request was successful, deserialize the JSON
             let modrinth_mod = response.json::<Vec<ModrinthVersion>>().await?;
             if let Some(first_mod) = modrinth_mod.first() {
-                let result = LockMod {
-                    source: ModSources::Modrinth,
-                    id: first_mod.project_id.clone(),
-                    name: first_mod.name.clone(),
-                    file_name: first_mod.files.first().unwrap().filename.clone(),
-                    release_date: first_mod.date_published.clone(),
-                    sha512: first_mod.files.first().unwrap().hashes.sha512.clone(),
-                    download_url: first_mod.files.first().unwrap().url.clone(),
-                };
-                Ok(result)
+                convert_modrinth_to_lockmod(first_mod)
             } else {
                 // Handle empty array case
                 let error_msg = format!("{}", id_slug);
@@ -90,5 +68,34 @@ pub async fn fetch_modrinth_mod(client: &Client, id_slug: &str, minecraft_versio
             let error_msg = format!("Received unexpected status code: {}", response.status());
             Err(error_msg.into())
         }
+    }
+}
+
+fn convert_modrinth_to_lockmod(modrinth_version: &ModrinthVersion) -> Result<LockMod, Box<dyn std::error::Error>> {
+    if let Some(first_file) = modrinth_version.files.first() {
+        let dependencies: Vec<LockDependency> = <Vec<ModrinthDependency> as Clone>::clone(&modrinth_version
+            .dependencies)
+            .into_iter()
+            .map(LockDependency::from)
+            .collect();
+
+        let lock_mod = LockMod {
+            name: modrinth_version.name.clone(),
+            source: ModSources::Modrinth,
+            id: modrinth_version.project_id.clone(),
+            file_name: first_file.filename.clone(),
+            release_date: modrinth_version.date_published.clone(),
+            sha512: first_file.hashes.sha512.clone(),
+            download_url: first_file.url.clone(),
+            dependencies,
+            size: first_file.size.clone(),
+        };
+
+        Ok(lock_mod)
+    } else {
+        Err(Box::new(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "No files found for mod",
+        )))
     }
 }

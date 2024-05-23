@@ -1,6 +1,6 @@
 use std::{fs, path::PathBuf};
 
-use crate::{datatypes::{self, Config, LockMod}, errors::ModManError};
+use crate::{datatypes::{Config, LockMod}, errors::ModManError};
 
 // modman.toml
 

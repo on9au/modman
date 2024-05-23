@@ -177,4 +177,47 @@ pub struct LockMod {
     pub release_date: String,
     pub sha512: String,
     pub download_url: String,
+    pub dependencies: Vec<LockDependency>,
+    pub size: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LockDependency {
+    pub version_id: Option<String>,
+    pub project_id: String,
+    pub file_name: Option<String>,
+    pub dependency_type: DependencyType,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum DependencyType {
+    Required,
+    Optional,
+    Incompatible,
+    Embedded,
+}
+
+impl std::str::FromStr for DependencyType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "required" => Ok(DependencyType::Required),
+            "optional" => Ok(DependencyType::Optional),
+            "incompatible" => Ok(DependencyType::Incompatible),
+            "embedded" => Ok(DependencyType::Embedded),
+            _ => Err(format!("Invalid Dependency Type: {}", s)),
+        }
+    }
+}
+
+impl From<crate::api::modrinth::ModrinthDependency> for LockDependency {
+    fn from(dep: crate::api::modrinth::ModrinthDependency) -> Self {
+        LockDependency {
+            version_id: dep.version_id,
+            project_id: dep.project_id,
+            file_name: dep.file_name,
+            dependency_type: dep.dependency_type,
+        }
+    }
 }
