@@ -1,5 +1,15 @@
 #[macro_export]
+macro_rules! actionheader {
+    ($msg:expr) => {
+        println!(" {}{}{}", "[".yellow().bold(), $msg.yellow().bold(), "]".yellow().bold());
+    };
+}
+
+#[macro_export]
 macro_rules! info {
+    ($msg:expr) => {
+        println!(" {} {}", "i".cyan().bold(), $msg.bold());
+    };
     ($msg:expr, $val:expr) => {
         println!(" {} {} {}", "i".cyan().bold(), $msg.bold(), $val.bright_black());
     };

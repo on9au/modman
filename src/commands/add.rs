@@ -5,7 +5,7 @@ use reqwest::Client;
 use colored::Colorize;
 
 use crate::{
-    alert, api::modrinth::fetch_modrinth_mod, commands::{command_structs::CommandOptions, init}, confirm, datatypes::{Mod, ModSources}, errors::ModManError, request, APP_USER_AGENT
+    actionheader, alert, api::modrinth::fetch_modrinth_mod, commands::{command_structs::CommandOptions, init}, confirm, datatypes::{Mod, ModSources}, errors::ModManError, info, request, APP_USER_AGENT
 };
 
 #[derive(Debug)]
@@ -59,6 +59,13 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
         }
         Err(e) => return Err(e)
     };
+
+    info!("Found configuration file for this directory.");
+    info!("Using version:", config.game_version.to_string());
+    info!("Using loader: ", config.game_loader.to_string());
+
+    print!("\n");
+    actionheader!("Fetching Mod(s)");
 
     // Define a vec of packages to be added.
     let mut packages: Vec<Package> = Vec::with_capacity(options.parameters.len());
