@@ -40,6 +40,14 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
         return Err(ModManError::NoArguments);
     }
 
+    let ignore_dependencies = options.flags.contains(&"--ignore-dependencies".to_string());
+
+    if ignore_dependencies {
+        info!("'--ignore-dependencies' tag detected. Ignoring dependencies...");
+    }
+
+    // TODO: Handle the ignore dependencies flag.
+
     let current_directory = match crate::utils::get_current_working_dir() {
         Ok(result) => result,
         Err(e) => return Err(ModManError::IoError(e)),
