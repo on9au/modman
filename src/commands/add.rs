@@ -185,7 +185,9 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
         confirm!("Cancelled transaction. Exiting...");
         return Ok(());
     }
-
+    print!("\n");
+    actionheader!("Transaction");
+    
     let tuples = convert_lock_mods_to_tuples(&config, mods_to_install);
     match download_all_mods(&client, tuples).await {
         Ok(_) => {},

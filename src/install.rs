@@ -2,12 +2,7 @@ use futures::StreamExt;
 use reqwest::Client;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::{error::Error, fs::File, io::Write, path::PathBuf, sync::Arc};
-
-use colored::Colorize;
-
-use crate::{alert, confirm};
-
-const MAX_MOD_NAME_LENGTH: usize = 30;
+use terminal_size::{Width, terminal_size};
 
 // Solve issue with returning string errors
 #[derive(Debug)]
@@ -37,28 +32,25 @@ pub async fn download_mod(
         }
     };
 
-    let total_size = match response.content_length() {
-        Some(size) => size,
-        None => {
-            return Err(Box::new(StrError("No content length found")));
-        }
+    let terminal_width = match terminal_size() {
+        Some((Width(width), _)) => width as usize,
+        None => 80, // Default to 80 if terminal size cannot be determined
     };
 
-    let pb = multi_pb.add(ProgressBar::new(total_size));
+    let pb = multi_pb.add(ProgressBar::new(terminal_width as u64 - 22)); // Adjust the width here
     pb.set_style(
-        ProgressStyle::default_bar()
-            .template("{msg} [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})")
+        ProgressStyle::with_template(" {spinner:.green} [{elapsed_precise}] [{msg}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")
             .unwrap()
-            .progress_chars("##-"),
+            .progress_chars("#>-"),
     );
 
-    let display_name = if mod_name.len() > MAX_MOD_NAME_LENGTH {
-        format!("{}...", &mod_name[..MAX_MOD_NAME_LENGTH - 3])
+    let display_name = if mod_name.len() > 30 {
+        format!("{}...", &mod_name[..27])
     } else {
-        mod_name.to_string()
+        format!("{:<30}", mod_name)
     };
 
-    pb.set_message(format!("Downloading: {}", display_name));
+    pb.set_message(format!("{}", display_name));
 
     let mut file = match File::create(dest) {
         Ok(result) => result,
@@ -86,23 +78,19 @@ pub async fn download_mod(
         downloaded += chunk.len() as u64;
         pb.set_position(downloaded);
     }
-
-    pb.finish_with_message(format!("Downloaded: {}", display_name));
-
     Ok(())
 }
 
-// Function to download all mods asynchronously
 pub async fn download_all_mods(
     client: &Arc<Client>,
     mods: Vec<(String, PathBuf, String)>,
 ) -> Result<(), Box<dyn Error + Send>> {
-    let multi_pb = MultiProgress::new();
+    let multi_pb = Arc::new(MultiProgress::new());
     let mut tasks = Vec::new();
 
     for (url, dest, name) in mods {
         let client = Arc::clone(client);
-        let multi_pb = multi_pb.clone();
+        let multi_pb = Arc::clone(&multi_pb);
         let mod_match = tokio::spawn(async move {
             download_mod(&client, &url, &dest, &name, &multi_pb).await
         });
@@ -116,11 +104,10 @@ pub async fn download_all_mods(
             Ok(Ok(())) => { /* Success, do nothing */ }
             Ok(Err(e)) => {
                 let message = "Error downloading mod: ".to_string() + &e.to_string();
-                alert!(message);
+                eprintln!("{}", message);
             }
             Err(e) => return Err(Box::new(e)),
         }
     }
-
     Ok(())
 }
