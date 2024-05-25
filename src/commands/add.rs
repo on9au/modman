@@ -5,7 +5,7 @@ use reqwest::Client;
 use colored::Colorize;
 
 use crate::{
-    actionheader, alert, api::modrinth::fetch_modrinth_mod, commands::command_structs::CommandOptions, confirm, datatypes::{DependencyType, GameLoader, LockDependency, LockMod, ModSources}, errors::ModManError, info, install::download_all_mods, request, utils::convert_lock_mods_to_tuples, APP_USER_AGENT
+    actionheader, alert, api::modrinth::fetch_modrinth_mod, commands::command_structs::CommandOptions, config::{read_lockfile, save_config, save_lockfile}, confirm, datatypes::{DependencyType, GameLoader, LockDependency, LockMod, Mod, ModSources}, errors::ModManError, info, install::download_all_mods, request, utils::convert_lock_mods_to_tuples, APP_USER_AGENT
 };
 
 use std::io::{self, Write};
@@ -53,7 +53,7 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
         Err(e) => return Err(ModManError::IoError(e)),
     };
 
-    let config = match crate::config::read_config(&current_directory) {
+    let mut config = match crate::config::read_config(&current_directory) {
         Ok(result) => result,
         Err(ModManError::FileNotFound) => {
             alert!("No config file (modman.toml) found for this directory!");
@@ -188,12 +188,41 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
     print!("\n");
     actionheader!("Transaction");
 
-    let tuples = convert_lock_mods_to_tuples(&config, mods_to_install);
+    let tuples = convert_lock_mods_to_tuples(&config, mods_to_install.clone());
     match download_all_mods(&client, tuples).await {
         Ok(_) => {},
         Err(e) => return Err(ModManError::TransactionDownloadError(e)),
     };
     confirm!("Transaction finished. All fetched mods have been downloaded.");
+    info!("Writing to config and lockfile...");
+    
+    // TODO: Fix lockfile serialization and deserialization.
+
+    // // Lockfile write
+    // let mut current_lockfile: Vec<LockMod> = match read_lockfile(&current_directory) {
+    //     Ok(result) => result,
+    //     Err(ModManError::FileNotFound) => Vec::new(),
+    //     Err(e) => return Err(e),
+    // };
+    // current_lockfile.append(&mut mods_to_install.clone());
+    // match save_lockfile(&current_directory, &current_lockfile) {
+    //     Ok(_) => confirm!("Lockfile saved successfully."),
+    //     Err(e) => return Err(e), 
+    // };
+
+    // Config write
+    for mod_match in mods_to_install {
+        let mod_input: Mod = Mod {
+            source: mod_match.source,
+            id: mod_match.id,
+            name: mod_match.name, 
+        };
+        config.mods.push(mod_input);
+    }
+    match save_config(&current_directory, &config) {
+        Ok(_) => confirm!("Config file saved successfully."),
+        Err(e) => return Err(e),
+    }
 
 
     Ok(())

@@ -1,4 +1,5 @@
 target/
 modman.toml
+modman.lock
 .VSCodeCounter
 mods/

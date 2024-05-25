@@ -39,7 +39,7 @@ pub async fn download_mod(
 
     let pb = multi_pb.add(ProgressBar::new(terminal_width as u64 - 22)); // Adjust the width here
     pb.set_style(
-        ProgressStyle::with_template(" {spinner:.green} [{elapsed_precise}] [{msg}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")
+        ProgressStyle::with_template(" {spinner:.green} [{msg}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")
             .unwrap()
             .progress_chars("#>-"),
     );

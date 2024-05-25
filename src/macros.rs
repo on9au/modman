@@ -35,7 +35,7 @@ macro_rules! request {
 #[macro_export]
 macro_rules! confirm {
     ($msg:expr) => {
-        println!("{} {}", "OK".green().bold(), $msg.bold());
+        println!("{} {}", "OK".green().bold(), $msg.bold())
     };
 }
 

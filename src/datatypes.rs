@@ -210,6 +210,17 @@ impl std::str::FromStr for DependencyType {
     }
 }
 
+impl fmt::Display for DependencyType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            DependencyType::Required => write!(f, "required"),
+            DependencyType::Optional => write!(f, "optional"),
+            DependencyType::Incompatible => write!(f, "incompatible"),
+            DependencyType::Embedded => write!(f, "embedded"),
+        }
+    }
+}
+
 impl TryFrom<crate::api::modrinth::ModrinthDependency> for LockDependency {
     type Error = String;
 
