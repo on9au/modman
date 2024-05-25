@@ -11,6 +11,7 @@ pub enum ModManError {
     APIFetchError(String),
     CannotFindMod(String),
     IncompatibleDependency(Box<dyn std::error::Error + Send + Sync>),
+    NoMods(String),
 }
 
 impl std::fmt::Display for ModManError {
@@ -27,6 +28,7 @@ impl std::fmt::Display for ModManError {
             ModManError::APIFetchError(err) => write!(f, "Error with API request: {}", err),
             ModManError::CannotFindMod(err) => write!(f, "Cannot find mod:       '{}'", err),
             ModManError::IncompatibleDependency(err) => write!(f, "Incompatible mods:       '{}'", err),
+            ModManError::NoMods(action) => write!(f, "No mods to {}.", action)
         }
     }
 }
@@ -54,6 +56,7 @@ impl ModManError {
             ModManError::APIFetchError(_) => 9,
             ModManError::CannotFindMod(_) => 10,
             ModManError::IncompatibleDependency(_) => 11,
+            ModManError::NoMods(_) => 12,
         }
     }
 }

@@ -164,6 +164,10 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
         }
     }
 
+    if mods_to_install.is_empty() {
+        return Err(ModManError::NoMods("get".to_owned()));
+    }
+
     // Transaction prompt:
     print!("\n");
     actionheader!("Get Mod(s) Transaction");
@@ -177,6 +181,10 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();
     input = input.trim().to_owned();
+    if input == "n" || input == "no" {
+        confirm!("Cancelled transaction. Exiting...");
+        return Ok(())
+    }
 
 
     Ok(())
