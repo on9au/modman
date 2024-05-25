@@ -1,6 +1,6 @@
 use futures::StreamExt;
 use reqwest::Client;
-use indicatif::{ProgressBar, ProgressStyle};
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::{error::Error, fs::File, io::Write, path::PathBuf, sync::Arc};
 
 use colored::Colorize;
@@ -23,17 +23,17 @@ impl<'a> std::fmt::Display for StrError<'a>{
     }
 }
 
-pub async fn download_mod(client: &Client, url: &str, dest: &PathBuf, mod_name: &str) -> Result<(), Box<dyn Error + Send>> {
-    /*
-        client      = clone of client, arc clone.
-        url         = download url
-        dest        = path to file on local. Include the filename, not just the path (use './mods/mod.jar', not './mod')
-        mod_name    = name of mod, not file name.
-    */
+pub async fn download_mod(
+    client: &Client,
+    url: &str,
+    dest: &PathBuf,
+    mod_name: &str,
+    multi_pb: &MultiProgress,
+) -> Result<(), Box<dyn Error + Send>> {
     let response = match client.get(url).send().await {
         Ok(resp) => resp,
         Err(err) => {
-            return Err(Box::new(err))
+            return Err(Box::new(err));
         }
     };
 
@@ -44,13 +44,14 @@ pub async fn download_mod(client: &Client, url: &str, dest: &PathBuf, mod_name: 
         }
     };
 
-    let pb = ProgressBar::new(total_size);
-    pb.set_style(ProgressStyle::default_bar()
-        .template("{msg} [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})")
-        .unwrap()
-        .progress_chars("##-"));
+    let pb = multi_pb.add(ProgressBar::new(total_size));
+    pb.set_style(
+        ProgressStyle::default_bar()
+            .template("{msg} [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})")
+            .unwrap()
+            .progress_chars("##-"),
+    );
 
-    // Truncate mod name if necessary
     let display_name = if mod_name.len() > MAX_MOD_NAME_LENGTH {
         format!("{}...", &mod_name[..MAX_MOD_NAME_LENGTH - 3])
     } else {
@@ -64,8 +65,9 @@ pub async fn download_mod(client: &Client, url: &str, dest: &PathBuf, mod_name: 
         Err(err) => {
             pb.finish_with_message(format!("Error creating file: {}", err));
             return Err(Box::new(err));
-        },
+        }
     };
+
     let mut downloaded: u64 = 0;
     let mut stream = response.bytes_stream();
 
@@ -85,23 +87,24 @@ pub async fn download_mod(client: &Client, url: &str, dest: &PathBuf, mod_name: 
         pb.set_position(downloaded);
     }
 
-    pb.finish_with_message(format!("Downloaded:  {}", display_name));
-
+    pb.finish_with_message(format!("Downloaded: {}", display_name));
 
     Ok(())
 }
 
 // Function to download all mods asynchronously
-pub async fn download_all_mods(client: &Arc<Client>, mods: Vec<(String, PathBuf, String)>) -> Result<(), Box<dyn Error + Send>> {
-    /*
-        client  = client which will be cloned.
-        mods    = Vec<URL, DEST, NAME>
-    */
+pub async fn download_all_mods(
+    client: &Arc<Client>,
+    mods: Vec<(String, PathBuf, String)>,
+) -> Result<(), Box<dyn Error + Send>> {
+    let multi_pb = MultiProgress::new();
     let mut tasks = Vec::new();
+
     for (url, dest, name) in mods {
         let client = Arc::clone(client);
+        let multi_pb = multi_pb.clone();
         let mod_match = tokio::spawn(async move {
-            download_mod(&client, &url, &dest, &name).await
+            download_mod(&client, &url, &dest, &name, &multi_pb).await
         });
         tasks.push(mod_match)
     }
@@ -110,15 +113,14 @@ pub async fn download_all_mods(client: &Arc<Client>, mods: Vec<(String, PathBuf,
 
     for result in results {
         match result {
-            Ok(Ok(())) => {confirm!("bruh")},
+            Ok(Ok(())) => { /* Success, do nothing */ }
             Ok(Err(e)) => {
                 let message = "Error downloading mod: ".to_string() + &e.to_string();
                 alert!(message);
-            },
+            }
             Err(e) => return Err(Box::new(e)),
         }
     }
-
 
     Ok(())
 }
