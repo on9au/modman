@@ -187,12 +187,13 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
     }
     print!("\n");
     actionheader!("Transaction");
-    
+
     let tuples = convert_lock_mods_to_tuples(&config, mods_to_install);
     match download_all_mods(&client, tuples).await {
         Ok(_) => {},
         Err(e) => return Err(ModManError::TransactionDownloadError(e)),
     };
+    confirm!("Transaction finished. All fetched mods have been downloaded.");
 
 
     Ok(())
