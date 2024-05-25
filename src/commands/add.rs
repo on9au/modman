@@ -5,7 +5,7 @@ use reqwest::Client;
 use colored::Colorize;
 
 use crate::{
-    actionheader, alert, api::modrinth::fetch_modrinth_mod, commands::command_structs::CommandOptions, confirm, datatypes::{DependencyType, GameLoader, LockDependency, LockMod, ModSources}, errors::ModManError, info, request, APP_USER_AGENT
+    actionheader, alert, api::modrinth::fetch_modrinth_mod, commands::command_structs::CommandOptions, confirm, datatypes::{DependencyType, GameLoader, LockDependency, LockMod, ModSources}, errors::ModManError, info, install::download_all_mods, request, utils::convert_lock_mods_to_tuples, APP_USER_AGENT
 };
 
 use std::io::{self, Write};
@@ -183,8 +183,14 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
     input = input.trim().to_owned();
     if input == "n" || input == "no" {
         confirm!("Cancelled transaction. Exiting...");
-        return Ok(())
+        return Ok(());
     }
+
+    let tuples = convert_lock_mods_to_tuples(&config, mods_to_install);
+    match download_all_mods(&client, tuples).await {
+        Ok(_) => {},
+        Err(e) => return Err(ModManError::TransactionDownloadError(e)),
+    };
 
 
     Ok(())
