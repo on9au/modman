@@ -173,6 +173,7 @@ pub struct LockMod {
     pub name: String,
     pub source: ModSources,
     pub id: String,
+    pub version: String,
     pub file_name: String,
     pub release_date: String,
     pub sha512: String,

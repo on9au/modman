@@ -11,6 +11,7 @@ struct ModrinthVersion {
     project_id: String,
     date_published: String,
     files: Vec<File>,
+    version_number: String, // Convert to something better maybe later?
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -86,6 +87,7 @@ fn convert_modrinth_to_lockmod(modrinth_version: &ModrinthVersion, title: String
             name: title,
             source: ModSources::Modrinth,
             id: modrinth_version.project_id.clone(),
+            version: modrinth_version.version_number.clone(),
             file_name: first_file.filename.clone(),
             release_date: modrinth_version.date_published.clone(),
             sha512: first_file.hashes.sha512.clone(),
