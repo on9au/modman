@@ -83,7 +83,7 @@ pub async fn download_mod(
     match verify_file(&dest, hash) {
         Ok(true) => return Ok(()),
         Ok(false) => {
-            pb.finish_with_message(format!("Hash Sum mismatch! Expected: {}", hash));
+            pb.finish_with_message(format!("Hash Sum mismatch!"));
             match fs::remove_file(dest) {
                 Ok(result) => result,
                 Err(err) => {
@@ -116,18 +116,7 @@ pub async fn download_all_mods(
         tasks.push(mod_match)
     }
 
-    let results = futures::future::join_all(tasks).await;
-
-    for result in results {
-        match result {
-            Ok(Ok(())) => { /* Success, do nothing */ }
-            Ok(Err(e)) => {
-                let message = "Error downloading mod: ".to_string() + &e.to_string();
-                eprintln!("{}", message);
-            }
-            Err(e) => return Err(Box::new(e)),
-        }
-    }
+    let _ = futures::future::join_all(tasks).await;
     Ok(())
 }
 
