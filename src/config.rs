@@ -22,6 +22,10 @@ pub fn read_config(dir: &PathBuf) -> Result<Config, ModManError> {
     let toml_content = fs::read_to_string(config_path)
         .map_err(|e| ModManError::IoError(e))?;
 
+    if toml_content.is_empty() {
+        return Err(ModManError::FileIsEmpty)
+    }
+
     let config: Config = toml::from_str(&toml_content)
         .map_err(|e| ModManError::DeserializationError(e))?;
 
@@ -54,6 +58,10 @@ pub fn read_lockfile(dir: &PathBuf) -> Result<Vec<LockMod>, ModManError> {
     
     let toml_content = fs::read_to_string(lockfile_path)
         .map_err(|e| ModManError::IoError(e))?;
+
+    if toml_content.is_empty() {
+        return Err(ModManError::FileIsEmpty)
+    }
 
     let lockmod_container: LockModContainer = toml::from_str(&toml_content)
         .map_err(|e| ModManError::DeserializationError(e))?;

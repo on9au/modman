@@ -13,6 +13,7 @@ pub enum ModManError {
     IncompatibleDependency(Box<dyn std::error::Error + Send + Sync>),
     NoMods(String),
     TransactionDownloadError(Box<dyn std::error::Error + Send>),
+    FileIsEmpty,
 }
 
 impl std::fmt::Display for ModManError {
@@ -31,6 +32,7 @@ impl std::fmt::Display for ModManError {
             ModManError::IncompatibleDependency(err) => write!(f, "Incompatible mods:       '{}'", err),
             ModManError::NoMods(action) => write!(f, "No mods to {}.", action),
             ModManError::TransactionDownloadError(err) => write!(f, "Transaction/download error: {}", err),
+            ModManError::FileIsEmpty => write!(f, "File is empty."),
         }
     }
 }
@@ -60,6 +62,7 @@ impl ModManError {
             ModManError::IncompatibleDependency(_) => 11,
             ModManError::NoMods(_) => 12,
             ModManError::TransactionDownloadError(_) => 13,
+            ModManError::FileIsEmpty => 14,
         }
     }
 }

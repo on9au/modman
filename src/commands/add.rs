@@ -45,6 +45,11 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
             alert!("Please run 'modman init' to generate a config file.");
             return Err(ModManError::FileNotFound)
         },
+        Err(ModManError::FileIsEmpty) => {
+            alert!("Config file (modman.toml) is empty!");
+            alert!("Please run 'modman init' to generate a config file.");
+            return Err(ModManError::FileIsEmpty)
+        },
         Err(ModManError::DeserializationError(e)) => {
             alert!("Either config file modman.toml has incorrect information, or is corrupt. Please modify modman.toml, or");
             alert!("delete it to reset the configuration.");
@@ -177,6 +182,7 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
     let mut current_lockfile: Vec<LockMod> = match read_lockfile(&current_directory) {
         Ok(result) => result,
         Err(ModManError::FileNotFound) => Vec::new(),
+        Err(ModManError::FileIsEmpty) => Vec::new(),
         Err(e) => return Err(e),
     };
     current_lockfile.append(&mut mods_to_install.clone());

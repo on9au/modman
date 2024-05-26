@@ -31,6 +31,7 @@ pub fn command_init() -> Result<(), ModManError> {
             alert!("To prevent this, press '^C' (Ctrl + C) to exit.")
         },
         Err(ModManError::FileNotFound) => {},
+        Err(ModManError::FileIsEmpty) => {},
         Err(ModManError::DeserializationError(e)) => {
             alert!("Either config file modman.toml has incorrect information, or is corrupt.");
             alert!("'modman init' will RESET the broken config file.");
