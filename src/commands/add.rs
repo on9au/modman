@@ -196,19 +196,17 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
     confirm!("Transaction finished. All fetched mods have been downloaded.");
     info!("Writing to config and lockfile...");
     
-    // TODO: Fix lockfile serialization and deserialization.
-
-    // // Lockfile write
-    // let mut current_lockfile: Vec<LockMod> = match read_lockfile(&current_directory) {
-    //     Ok(result) => result,
-    //     Err(ModManError::FileNotFound) => Vec::new(),
-    //     Err(e) => return Err(e),
-    // };
-    // current_lockfile.append(&mut mods_to_install.clone());
-    // match save_lockfile(&current_directory, &current_lockfile) {
-    //     Ok(_) => confirm!("Lockfile saved successfully."),
-    //     Err(e) => return Err(e), 
-    // };
+    // Lockfile write
+    let mut current_lockfile: Vec<LockMod> = match read_lockfile(&current_directory) {
+        Ok(result) => result,
+        Err(ModManError::FileNotFound) => Vec::new(),
+        Err(e) => return Err(e),
+    };
+    current_lockfile.append(&mut mods_to_install.clone());
+    match save_lockfile(&current_directory, &current_lockfile) {
+        Ok(_) => confirm!("Lockfile saved successfully."),
+        Err(e) => return Err(e), 
+    };
 
     // Config write
     for mod_match in mods_to_install {
