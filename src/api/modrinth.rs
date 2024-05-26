@@ -6,7 +6,7 @@ use crate::datatypes::{GameLoader, LockDependency, LockMod, ModSources};
 const MODRINTH_API_BASE: &str = "https://api.modrinth.com";
 #[derive(Debug, Deserialize)]
 struct ModrinthVersion {
-    name: String,
+    // name: String,
     dependencies: Vec<ModrinthDependency>,
     project_id: String,
     date_published: String,
