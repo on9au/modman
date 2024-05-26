@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::HashSet, sync::Arc};
 use reqwest::Client;
 use colored::Colorize;
 use crate::{
@@ -38,6 +38,7 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
         Err(e) => return Err(ModManError::IoError(e)),
     };
 
+    // Load configuration file
     let mut config = match crate::config::read_config(&current_directory) {
         Ok(result) => result,
         Err(ModManError::FileNotFound) => {
@@ -56,6 +57,14 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
             return Err(ModManError::DeserializationError(e))
         }
         Err(e) => return Err(e)
+    };
+
+    // Load lockfile
+    let mut current_lockfile: Vec<LockMod> = match read_lockfile(&current_directory) {
+        Ok(result) => result,
+        Err(ModManError::FileNotFound) => Vec::new(),
+        Err(ModManError::FileIsEmpty) => Vec::new(),
+        Err(e) => return Err(e),
     };
 
     info!("Found configuration file for this directory.");
@@ -125,23 +134,33 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
         res.unwrap_or_else(|join_error| Err(ModManError::APIFetchError(format!("Task failed: {:?}", join_error))))
     }).collect();
 
+    let mut already_installed_mods: HashSet<String> = HashSet::new(); // Track already installed mods to avoid duplicates
+
     for result in results {
         match result {
             Ok(mod_result) => {
                 let message = "Found mod:             '".to_string() + &mod_result.name + "'";
                 confirm!(message);
-                if !mods_to_install.iter().any(|m| m.id == mod_result.id) {
+                // Check if mod is not already installed and its dependencies are not already installed
+                if !already_installed_mods.contains(&mod_result.id) && !current_lockfile.iter().any(|lock_mod| lock_mod.id == mod_result.id) {
                     mods_to_install.push(mod_result.clone());
                     if ignore_dependencies {
-                        break;
+                        already_installed_mods.insert(mod_result.id.clone());
+                    } else {
+                        match handle_dependencies(&client, &mut mods_to_install, &mod_result.dependencies, &config.game_version, &config.game_loader).await {
+                            Ok(_) => {
+                                // Insert the mod and its dependencies into the set of already installed mods
+                                already_installed_mods.insert(mod_result.id.clone());
+                                for dep in &mod_result.dependencies {
+                                    already_installed_mods.insert(dep.project_id.clone());
+                                }
+                            },
+                            Err(e) => {
+                                let message = "Cannot find mod: '".to_string() + &e.to_string() + "'";
+                                alert!(message);
+                            },
+                        };
                     }
-                    match handle_dependencies(&client, &mut mods_to_install, &mod_result.dependencies, &config.game_version, &config.game_loader).await {
-                        Ok(_) => {},
-                        Err(e) => {
-                            let message = "Cannot find mod:       '".to_string() + &e.to_string() + "'";
-                            alert!(message)
-                        },
-                    };
                 }
             }
             Err(e) => alert!(e.to_string()),
@@ -179,12 +198,6 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
     confirm!("Transaction finished. All fetched mods have been downloaded.");
     info!("Writing to config and lockfile...");
 
-    let mut current_lockfile: Vec<LockMod> = match read_lockfile(&current_directory) {
-        Ok(result) => result,
-        Err(ModManError::FileNotFound) => Vec::new(),
-        Err(ModManError::FileIsEmpty) => Vec::new(),
-        Err(e) => return Err(e),
-    };
     current_lockfile.append(&mut mods_to_install.clone());
     match save_lockfile(&current_directory, &current_lockfile) {
         Ok(_) => confirm!("Lockfile saved successfully."),
