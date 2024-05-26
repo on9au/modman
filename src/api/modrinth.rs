@@ -33,6 +33,11 @@ struct Hashes {
     sha512: String,
 }
 
+#[derive(Deserialize)]
+struct ModrinthProject {
+    title: String, 
+}
+
 pub async fn fetch_modrinth_mod(client: &Client, id_slug: &str, minecraft_version: &String, loader: &GameLoader) -> Result<LockMod, Box<dyn std::error::Error + Send + Sync>> {
     let url = format!("{}/v2/project/{}/version?game_versions=[\"{}\"]&loaders=[\"{}\"]", MODRINTH_API_BASE, id_slug, minecraft_version, loader);
     let response = match client.get(&url).send().await {
@@ -48,7 +53,8 @@ pub async fn fetch_modrinth_mod(client: &Client, id_slug: &str, minecraft_versio
             // The request was successful, deserialize the JSON
             let modrinth_mod = response.json::<Vec<ModrinthVersion>>().await?;
             if let Some(first_mod) = modrinth_mod.first() {
-                convert_modrinth_to_lockmod(first_mod)
+                let title = client.get(format!("{}/v2/project/{}", MODRINTH_API_BASE, id_slug)).send().await?.json::<ModrinthProject>().await?.title;
+                convert_modrinth_to_lockmod(first_mod, title)
             } else {
                 // Handle empty array case
                 let error_msg = format!("( No Mod File ) {}", id_slug);
@@ -68,7 +74,7 @@ pub async fn fetch_modrinth_mod(client: &Client, id_slug: &str, minecraft_versio
     }
 }
 
-fn convert_modrinth_to_lockmod(modrinth_version: &ModrinthVersion) -> Result<LockMod, Box<dyn std::error::Error + Send + Sync>> {
+fn convert_modrinth_to_lockmod(modrinth_version: &ModrinthVersion, title: String) -> Result<LockMod, Box<dyn std::error::Error + Send + Sync>> {
     if let Some(first_file) = modrinth_version.files.first() {
         let dependencies: Result<Vec<LockDependency>, String> = modrinth_version
             .dependencies
@@ -77,7 +83,7 @@ fn convert_modrinth_to_lockmod(modrinth_version: &ModrinthVersion) -> Result<Loc
             .collect();
 
         let lock_mod = LockMod {
-            name: modrinth_version.name.clone(),
+            name: title,
             source: ModSources::Modrinth,
             id: modrinth_version.project_id.clone(),
             file_name: first_file.filename.clone(),
