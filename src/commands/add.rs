@@ -30,6 +30,22 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
         ModMan prioritizes modrinth over curseforge. Therefore, if source is left blank (text before @), then modrinth is used.
 
         This argument can be repeated as much times as possible to install multiple mods at a time.
+
+        Step-by-Step Workflow:
+            0. READ TRANSACTIONS: If there was a failed transaction (or more), error out and request user to go to `modman transactions`
+            1. READ: Read config and lockfile.
+            2. FETCH: Fetch requested mods.
+            3. RESOLVE: Resolve dependencies.
+            4. SYNC (modfiles to lockfile): Compare lockmod to existing files. If checksums are incorrect/files don't exist, delete from lockfile.
+                TODO ABOVE
+                Maybe: Devise a seperate command which will be called, like `modman sync` which deletes mods that do not exist at mod folder, and add mods
+                that are not in the lockfile but exist in the mods folder.
+            5. COMPARE: Compare list of mods to install with lockfile to determine reinstalling already installed mods (the lockmod).
+            6. TRANSACTION: If there are mods to install, request user confirmation, then install mods.
+                TODO: BETTER TRANSACTION SYSTEM THAT LOGS THE TRANSACTION STEPS FOR FAILURE REDUNDANCY.
+                Maybe: Add a list of successful installs `if success successful.push(mods_to_install.pop())` to use in step 7
+                TODO ABOVE
+            7. SYNC (config and lockfile): Add (non-duplicate) explicit mod dependencies to config. Add (non-duplicate) indirect mod dependencies to lockfile.
     */
 
     if options.parameters.is_empty() {
