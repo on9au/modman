@@ -84,8 +84,9 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
     actionheader!("Fetching Mod(s)");
 
     let mut packages: Vec<Package> = Vec::with_capacity(options.parameters.len());
+    let mut explicit_mods: Vec<LockMod> = Vec::new(); // Mods which the user specifies (suited to Config).
     let mut mod_matches = Vec::new();
-    let mut mods_to_install: Vec<LockMod> = Vec::new();
+    let mut mods_to_install: Vec<LockMod> = Vec::new(); // All mods incl dependencies to install (suited to Lockfile).
 
     for arg in &options.parameters {
         if let Some(at_pos) = arg.find('@') {
@@ -167,6 +168,7 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
                         .any(|lock_mod| lock_mod.id == mod_result.id)
                 {
                     mods_to_install.push(mod_result.clone());
+                    explicit_mods.push(mod_result.clone());
                     if ignore_dependencies {
                         already_installed_mods.insert(mod_result.id.clone());
                     } else {
@@ -239,7 +241,7 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
         Err(e) => return Err(e),
     };
 
-    for mod_match in mods_to_install {
+    for mod_match in explicit_mods {
         let mod_input: Mod = Mod {
             source: mod_match.source,
             id: mod_match.id,
