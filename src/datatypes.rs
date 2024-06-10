@@ -39,7 +39,6 @@ pub enum GameLoader {
     Waterfall,
 }
 
-
 impl fmt::Display for GameLoader {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -100,7 +99,6 @@ impl std::str::FromStr for GameLoader {
         }
     }
 }
-
 
 // Mods struct
 #[derive(Debug, Serialize, Deserialize)]

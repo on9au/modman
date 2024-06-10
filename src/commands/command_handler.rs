@@ -2,11 +2,12 @@ use std::env::Args;
 
 use colored::Colorize;
 
-use crate::{commands::{
-    init, command_structs, add, version
-}, errors::ModManError};
+use crate::{
+    commands::{add, command_structs, init, version},
+    errors::ModManError,
+};
 
-pub async fn handle_command(mut args: Args) -> Result<(), ModManError>{
+pub async fn handle_command(mut args: Args) -> Result<(), ModManError> {
     args.next(); // Skip first args, which is the program binary.
 
     // Parse the command and its arguments
@@ -21,7 +22,7 @@ pub async fn handle_command(mut args: Args) -> Result<(), ModManError>{
     } else {
         println!("No command specified.");
         let _ = command_help();
-        return Ok(())
+        return Ok(());
     }
 
     // Parse the remaining arguments
@@ -33,28 +34,29 @@ pub async fn handle_command(mut args: Args) -> Result<(), ModManError>{
         }
     }
 
-    let command_result: Result<(), ModManError> = match command_options.command.to_lowercase().as_str() {
-        "help" => command_help(),
-        "version" => version::command_version(),
-        "install" => todo!(),
-        "add" => add::command_add(&command_options).await,
-        "init" => init::command_init(),
-        "remove" => todo!(),
-        "search" => todo!(),
-        "update" => todo!(),
-        "upgrade" => todo!(),
-        "list" => todo!(),  
-        "info" => todo!(),
-        _ => {
-            println!("Unknown command '{}'.", command_options.command);
-            command_help()?;
-            Err(ModManError::CommandNotFound)
-        }
-    };
+    let command_result: Result<(), ModManError> =
+        match command_options.command.to_lowercase().as_str() {
+            "help" => command_help(),
+            "version" => version::command_version(),
+            "install" => todo!(),
+            "add" => add::command_add(&command_options).await,
+            "init" => init::command_init(),
+            "remove" => todo!(),
+            "search" => todo!(),
+            "update" => todo!(),
+            "upgrade" => todo!(),
+            "list" => todo!(),
+            "info" => todo!(),
+            _ => {
+                println!("Unknown command '{}'.", command_options.command);
+                command_help()?;
+                Err(ModManError::CommandNotFound)
+            }
+        };
 
     if let Err(e) = command_result {
         eprintln!("{}: {}", "[Error executing command]".red().bold(), e);
-        return Err(e)
+        return Err(e);
     }
 
     Ok(())

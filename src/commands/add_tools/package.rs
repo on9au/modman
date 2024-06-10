@@ -13,6 +13,9 @@ impl Package {
             Some(s) => s.parse::<crate::datatypes::ModSources>()?,
             None => ModSources::Modrinth, // Default to Modrinth if no source is provided
         };
-        Ok(Package { search_term, source })
+        Ok(Package {
+            search_term,
+            source,
+        })
     }
 }

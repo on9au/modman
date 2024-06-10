@@ -20,7 +20,9 @@ impl std::fmt::Display for ModManError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ModManError::CommandNotFound => write!(f, "Command not found."),
-            ModManError::InvalidCommandArguments(msg) => write!(f, "Invalid command arguments: {}", msg),
+            ModManError::InvalidCommandArguments(msg) => {
+                write!(f, "Invalid command arguments: {}", msg)
+            }
             ModManError::IoError(err) => write!(f, "IO error: {}", err),
             ModManError::NoArguments => write!(f, "No arguments passed."),
             ModManError::SerializationError(err) => write!(f, "Serialization error: {}", err),
@@ -29,9 +31,13 @@ impl std::fmt::Display for ModManError {
             ModManError::ReqwestError(err) => write!(f, "Error with API client (Reqwest): {}", err),
             ModManError::APIFetchError(err) => write!(f, "Error with API request: {}", err),
             ModManError::CannotFindMod(err) => write!(f, "Cannot find mod:       '{}'", err),
-            ModManError::IncompatibleDependency(err) => write!(f, "Incompatible mods:       '{}'", err),
+            ModManError::IncompatibleDependency(err) => {
+                write!(f, "Incompatible mods:       '{}'", err)
+            }
             ModManError::NoMods(action) => write!(f, "No mods to {}.", action),
-            ModManError::TransactionDownloadError(err) => write!(f, "Transaction/download error: {}", err),
+            ModManError::TransactionDownloadError(err) => {
+                write!(f, "Transaction/download error: {}", err)
+            }
             ModManError::FileIsEmpty => write!(f, "File is empty."),
         }
     }

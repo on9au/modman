@@ -1,14 +1,14 @@
-mod commands;
 mod api;
+mod commands;
 mod config;
-mod errors;
-mod utils;
 mod datatypes;
-mod macros;
+mod errors;
 mod install;
+mod macros;
+mod utils;
 
-use std::{env, process};
 use commands::command_handler;
+use std::{env, process};
 
 pub static APP_USER_AGENT: &str = concat!(
     env!("CARGO_PKG_AUTHORS"),
@@ -22,8 +22,8 @@ pub static APP_USER_AGENT: &str = concat!(
 #[tokio::main]
 async fn main() {
     match color_eyre::install() {
-        Ok(_) => {},
-        Err(e) => panic!("{}", e)
+        Ok(_) => {}
+        Err(e) => panic!("{}", e),
     };
 
     let handler = command_handler::handle_command(env::args()).await;

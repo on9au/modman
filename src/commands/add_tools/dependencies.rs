@@ -1,8 +1,8 @@
-use reqwest::Client;
-use std::pin::Pin;
+use crate::api::modrinth::fetch_modrinth_mod;
 use crate::datatypes::{DependencyType, GameLoader, LockDependency, LockMod};
 use crate::errors::ModManError;
-use crate::api::modrinth::fetch_modrinth_mod;
+use reqwest::Client;
+use std::pin::Pin;
 
 pub async fn handle_dependencies(
     client: &Client,
@@ -30,10 +30,9 @@ pub async fn handle_dependencies(
                     // Optional dependencies can be skipped or handled differently if needed
                 }
                 DependencyType::Incompatible => {
-                    return Err(Box::new(ModManError::IncompatibleDependency(format!(
-                        "Incompatible mod: {}",
-                        dep.project_id
-                    ).into())));
+                    return Err(Box::new(ModManError::IncompatibleDependency(
+                        format!("Incompatible mod: {}", dep.project_id).into(),
+                    )));
                 }
                 DependencyType::Embedded => {
                     // Handle embedded dependencies if needed
@@ -48,7 +47,13 @@ pub async fn handle_dependencies(
             Ok(Ok(dep_mod)) => {
                 if !mods_to_install.iter().any(|m| m.id == dep_mod.id) {
                     mods_to_install.push(dep_mod.clone());
-                    let fut = handle_dependencies(client, mods_to_install, &dep_mod.dependencies, minecraft_version, loader);
+                    let fut = handle_dependencies(
+                        client,
+                        mods_to_install,
+                        &dep_mod.dependencies,
+                        minecraft_version,
+                        loader,
+                    );
                     Pin::from(Box::new(fut)).await?;
                 }
             }
