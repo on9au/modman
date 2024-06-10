@@ -1,9 +1,15 @@
 use futures::StreamExt;
-use reqwest::Client;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use reqwest::Client;
 use sha2::{Digest, Sha512};
-use std::{error::Error, fs::{self, File}, io::{self, Read, Write}, path::PathBuf, sync::Arc};
-use terminal_size::{Width, terminal_size};
+use std::{
+    error::Error,
+    fs::{self, File},
+    io::{self, Read, Write},
+    path::PathBuf,
+    sync::Arc,
+};
+use terminal_size::{terminal_size, Width};
 
 // Solve issue with returning string errors
 #[derive(Debug)]
@@ -12,7 +18,7 @@ struct StrError<'a>(&'a str);
 // your type must also implement Debug and Display.
 impl<'a> Error for StrError<'a> {}
 
-impl<'a> std::fmt::Display for StrError<'a>{
+impl<'a> std::fmt::Display for StrError<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // Delegate to the Display impl for `&str`:
         self.0.fmt(f)
@@ -25,7 +31,7 @@ pub async fn download_mod(
     dest: &PathBuf,
     mod_name: &str,
     multi_pb: &MultiProgress,
-    hash: &String,
+    hash: &str,
 ) -> Result<(), Box<dyn Error + Send>> {
     let response = match client.get(url).send().await {
         Ok(resp) => resp,
@@ -41,9 +47,11 @@ pub async fn download_mod(
 
     let pb = multi_pb.add(ProgressBar::new(terminal_width as u64 - 22)); // Adjust the width here
     pb.set_style(
-        ProgressStyle::with_template(" {spinner:.green} [{msg}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")
-            .unwrap()
-            .progress_chars("#>-"),
+        ProgressStyle::with_template(
+            " {spinner:.green} [{msg}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})",
+        )
+        .unwrap()
+        .progress_chars("#>-"),
     );
 
     let display_name = if mod_name.len() > 30 {
@@ -52,7 +60,7 @@ pub async fn download_mod(
         format!("{:<30}", mod_name)
     };
 
-    pb.set_message(format!("{}", display_name));
+    pb.set_message(display_name.to_string());
 
     let mut file = match File::create(dest) {
         Ok(result) => result,
@@ -80,10 +88,10 @@ pub async fn download_mod(
         downloaded += chunk.len() as u64;
         pb.set_position(downloaded);
     }
-    match verify_file(&dest, hash) {
-        Ok(true) => return Ok(()),
+    match verify_file(dest, hash) {
+        Ok(true) => Ok(()),
         Ok(false) => {
-            pb.finish_with_message(format!("Hash Sum mismatch!"));
+            pb.finish_with_message("Hash Sum mismatch!".to_string());
             match fs::remove_file(dest) {
                 Ok(result) => result,
                 Err(err) => {
@@ -92,12 +100,12 @@ pub async fn download_mod(
                 }
             };
             return Err(Box::new(StrError("Hash Sum mismatch!")));
-        },
+        }
         Err(e) => {
             pb.finish_with_message(format!("Error verifying file: {}", e));
-            return Err(Box::new(e));
-        },
-    };
+            Err(Box::new(e))
+        }
+    }
 }
 
 pub async fn download_all_mods(
@@ -123,10 +131,10 @@ pub async fn download_all_mods(
 fn calculate_sha512(file_path: &PathBuf) -> Result<String, io::Error> {
     // Open the file
     let mut file = File::open(file_path)?;
-    
+
     // Create a SHA-512 hasher instance
     let mut hasher = Sha512::new();
-    
+
     // Read file in chunks
     let mut buffer = [0; 1024];
     loop {
@@ -136,7 +144,7 @@ fn calculate_sha512(file_path: &PathBuf) -> Result<String, io::Error> {
         }
         hasher.update(&buffer[..n]);
     }
-    
+
     // Retrieve the hash result and convert it to a hex string
     let hash_result = hasher.finalize();
     Ok(hex::encode(hash_result))
@@ -145,7 +153,7 @@ fn calculate_sha512(file_path: &PathBuf) -> Result<String, io::Error> {
 fn verify_file(file_path: &PathBuf, expected_hash: &str) -> Result<bool, io::Error> {
     // Calculate the SHA-512 hash of the file
     let file_hash = calculate_sha512(file_path)?;
-    
+
     // Compare the calculated hash with the expected hash
     Ok(file_hash == expected_hash)
 }

@@ -7,10 +7,10 @@ use crossterm::cursor::MoveToPreviousLine;
 use crossterm::execute;
 use crossterm::terminal::{Clear, ClearType};
 
+use crate::datatypes::{Config, GameLoader, ReleaseTypes};
 use crate::errors::ModManError;
-use crate::datatypes::{Config, ReleaseTypes, GameLoader};
-use crate::{alert, confirm, info, request, requestconfirm};
 use crate::utils::get_current_working_dir;
+use crate::{alert, confirm, info, request, requestconfirm};
 
 pub fn command_init() -> Result<(), ModManError> {
     let mut game_version = String::new();
@@ -20,7 +20,7 @@ pub fn command_init() -> Result<(), ModManError> {
 
     let current_dir = match get_current_working_dir() {
         Ok(path) => path,
-        Err(e) => return Err(ModManError::IoError(e))
+        Err(e) => return Err(ModManError::IoError(e)),
     };
 
     info!("Current directory:", current_dir.display().to_string());
@@ -29,17 +29,17 @@ pub fn command_init() -> Result<(), ModManError> {
         Ok(_) => {
             alert!("Found existing modman.toml file! 'modman init' will ERASE modman.toml, thus removing the mods list!");
             alert!("To prevent this, press '^C' (Ctrl + C) to exit.")
-        },
-        Err(ModManError::FileNotFound) => {},
-        Err(ModManError::FileIsEmpty) => {},
+        }
+        Err(ModManError::FileNotFound) => {}
+        Err(ModManError::FileIsEmpty) => {}
         Err(ModManError::DeserializationError(e)) => {
             alert!("Either config file modman.toml has incorrect information, or is corrupt.");
             alert!("'modman init' will RESET the broken config file.");
             alert!("It might be a good idea to create a backup of the config file if you have mods saved there.");
-            println!("   {} {}", "The error was:".bright_red(), e.to_string());
+            println!("   {} {}", "The error was:".bright_red(), e);
             info!("Continue below with modman init to reset broken config...");
         }
-        Err(e) => return Err(e)
+        Err(e) => return Err(e),
     }
 
     // Ask user for version
@@ -66,23 +66,28 @@ pub fn command_init() -> Result<(), ModManError> {
         match GameLoader::from_str(&input) {
             Ok(result) => {
                 game_loader = Some(result);
-            },
+            }
             Err(_) => {
-                println!(" {} Invalid value '{}' detected. Please enter a valid Minecraft loader.", "!".red().bold(), input.bold());
+                println!(
+                    " {} Invalid value '{}' detected. Please enter a valid Minecraft loader.",
+                    "!".red().bold(),
+                    input.bold()
+                );
                 is_valid = false;
             }
         };
-        if is_valid {
-            if confirm_input(&game_loader.clone().unwrap().to_string()) {
-                break;
-            }
+        if is_valid && confirm_input(&game_loader.clone().unwrap().to_string()) {
+            break;
         }
         input.clear();
     }
 
     // Ask user for default allowed release types
     loop {
-        request!("Default Allowed Release Types (alpha, beta, release) (seperated by comma)", "[Default: 'alpha, beta, release']");
+        request!(
+            "Default Allowed Release Types (alpha, beta, release) (seperated by comma)",
+            "[Default: 'alpha, beta, release']"
+        );
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
         input = input.trim().to_owned();
@@ -111,14 +116,17 @@ pub fn command_init() -> Result<(), ModManError> {
         if is_valid {
             let unique_values: HashSet<_> = allowed_release_types.iter().collect();
             if unique_values.len() != allowed_release_types.len() {
-                println!(" {} Repeated values detected. Please enter each release type only once.", "!".red().bold());
+                println!(
+                    " {} Repeated values detected. Please enter each release type only once.",
+                    "!".red().bold()
+                );
                 allowed_release_types.clear();
+            } else if confirm_input(&crate::datatypes::format_release_types(
+                &allowed_release_types,
+            )) {
+                break;
             } else {
-                if confirm_input(&crate::datatypes::format_release_types(&allowed_release_types)) {
-                    break;
-                } else {
-                    allowed_release_types.clear();
-                }
+                allowed_release_types.clear();
             }
         }
     }
@@ -140,12 +148,16 @@ pub fn command_init() -> Result<(), ModManError> {
         }
     }
 
-    confirm!("Saving configuration. These settings will be used when you run modman in this directory.");
-    
+    confirm!(
+        "Saving configuration. These settings will be used when you run modman in this directory."
+    );
+
     let config = Config {
-        game_loader: game_loader.expect("Game Loader variable was empty somehow during init command! Please report this issue."),
+        game_loader: game_loader.expect(
+            "Game Loader variable was empty somehow during init command! Please report this issue.",
+        ),
         game_version,
-        allowed_release_types: allowed_release_types,
+        allowed_release_types,
         mods_folder: std::path::PathBuf::from(mods_folder),
         mods: Vec::new(), // Empty mods array for now
     };
@@ -166,14 +178,16 @@ fn confirm_input(input: &str) -> bool {
         io::stdout(),
         MoveToPreviousLine(1),
         Clear(ClearType::CurrentLine)
-    ).unwrap();
+    )
+    .unwrap();
 
-    if !(confirmation == "y") && !(confirmation == "yes") {
+    if confirmation != "y" && confirmation != "yes" {
         execute!(
             io::stdout(),
             MoveToPreviousLine(1),
             Clear(ClearType::CurrentLine)
-        ).unwrap();
+        )
+        .unwrap();
     }
 
     confirmation == "y" || confirmation == "yes"

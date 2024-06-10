@@ -36,11 +36,19 @@ struct Hashes {
 
 #[derive(Deserialize)]
 struct ModrinthProject {
-    title: String, 
+    title: String,
 }
 
-pub async fn fetch_modrinth_mod(client: &Client, id_slug: &str, minecraft_version: &String, loader: &GameLoader) -> Result<LockMod, Box<dyn std::error::Error + Send + Sync>> {
-    let url = format!("{}/v2/project/{}/version?game_versions=[\"{}\"]&loaders=[\"{}\"]", MODRINTH_API_BASE, id_slug, minecraft_version, loader);
+pub async fn fetch_modrinth_mod(
+    client: &Client,
+    id_slug: &str,
+    minecraft_version: &String,
+    loader: &GameLoader,
+) -> Result<LockMod, Box<dyn std::error::Error + Send + Sync>> {
+    let url = format!(
+        "{}/v2/project/{}/version?game_versions=[\"{}\"]&loaders=[\"{}\"]",
+        MODRINTH_API_BASE, id_slug, minecraft_version, loader
+    );
     let response = match client.get(&url).send().await {
         Ok(resp) => resp,
         Err(err) => {
@@ -54,7 +62,13 @@ pub async fn fetch_modrinth_mod(client: &Client, id_slug: &str, minecraft_versio
             // The request was successful, deserialize the JSON
             let modrinth_mod = response.json::<Vec<ModrinthVersion>>().await?;
             if let Some(first_mod) = modrinth_mod.first() {
-                let title = client.get(format!("{}/v2/project/{}", MODRINTH_API_BASE, id_slug)).send().await?.json::<ModrinthProject>().await?.title;
+                let title = client
+                    .get(format!("{}/v2/project/{}", MODRINTH_API_BASE, id_slug))
+                    .send()
+                    .await?
+                    .json::<ModrinthProject>()
+                    .await?
+                    .title;
                 convert_modrinth_to_lockmod(first_mod, title)
             } else {
                 // Handle empty array case
@@ -75,7 +89,10 @@ pub async fn fetch_modrinth_mod(client: &Client, id_slug: &str, minecraft_versio
     }
 }
 
-fn convert_modrinth_to_lockmod(modrinth_version: &ModrinthVersion, title: String) -> Result<LockMod, Box<dyn std::error::Error + Send + Sync>> {
+fn convert_modrinth_to_lockmod(
+    modrinth_version: &ModrinthVersion,
+    title: String,
+) -> Result<LockMod, Box<dyn std::error::Error + Send + Sync>> {
     if let Some(first_file) = modrinth_version.files.first() {
         let dependencies: Result<Vec<LockDependency>, String> = modrinth_version
             .dependencies
@@ -93,7 +110,7 @@ fn convert_modrinth_to_lockmod(modrinth_version: &ModrinthVersion, title: String
             sha512: first_file.hashes.sha512.clone(),
             download_url: first_file.url.clone(),
             dependencies: dependencies?,
-            size: first_file.size.clone(),
+            size: first_file.size,
         };
 
         Ok(lock_mod)
