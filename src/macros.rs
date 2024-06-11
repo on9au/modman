@@ -13,7 +13,7 @@ macro_rules! actionheader {
 #[macro_export]
 macro_rules! info {
     ($msg:expr) => {
-        println!(" {} {}", "i".cyan().bold(), $msg.bold());
+        println!(" {} {}", "i".cyan().bold(), $msg.bold())
     };
     ($msg:expr, $val:expr) => {
         println!(
