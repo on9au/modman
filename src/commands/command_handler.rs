@@ -7,6 +7,8 @@ use crate::{
     errors::ModManError,
 };
 
+use super::sync;
+
 pub async fn handle_command(mut args: Args) -> Result<(), ModManError> {
     args.next(); // Skip first args, which is the program binary.
 
@@ -26,7 +28,7 @@ pub async fn handle_command(mut args: Args) -> Result<(), ModManError> {
     }
 
     // Parse the remaining arguments
-    while let Some(arg) = args.next() {
+    for arg in args {
         if arg.starts_with("--") {
             command_options.flags.push(arg);
         } else {
@@ -41,6 +43,7 @@ pub async fn handle_command(mut args: Args) -> Result<(), ModManError> {
             "install" => todo!(),
             "add" => add::command_add(&command_options).await,
             "init" => init::command_init(),
+            "sync" => sync::command_sync(&command_options).await,
             "remove" => todo!(),
             "search" => todo!(),
             "update" => todo!(),

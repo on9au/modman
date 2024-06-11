@@ -101,7 +101,7 @@ impl std::str::FromStr for GameLoader {
 }
 
 // Mods struct
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Mod {
     pub source: ModSources,
     pub id: String,
@@ -109,10 +109,11 @@ pub struct Mod {
 }
 
 // Mod sources
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 pub enum ModSources {
     Modrinth,
     CurseForge,
+    Local,
 }
 
 impl fmt::Display for ModSources {
@@ -120,6 +121,7 @@ impl fmt::Display for ModSources {
         match *self {
             ModSources::Modrinth => write!(f, "Modrinth"),
             ModSources::CurseForge => write!(f, "CurseForge"),
+            ModSources::Local => write!(f, "Local"),
         }
     }
 }
@@ -131,6 +133,7 @@ impl std::str::FromStr for ModSources {
         match s.to_lowercase().as_str() {
             "modrinth" => Ok(ModSources::Modrinth),
             "curseforge" => Ok(ModSources::CurseForge),
+            "local" => Ok(ModSources::Local),
             _ => Err(format!("Invalid source: {}", s)),
         }
     }
@@ -166,7 +169,7 @@ pub fn format_release_types(release_types: &[ReleaseTypes]) -> String {
 }
 
 // Lockfile:
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 pub struct LockMod {
     pub name: String,
     pub source: ModSources,
@@ -180,14 +183,14 @@ pub struct LockMod {
     pub size: u64,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 pub struct LockDependency {
     pub source: ModSources,
     pub project_id: String,
     pub dependency_type: DependencyType,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 pub enum DependencyType {
     Required,
     Optional,

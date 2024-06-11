@@ -121,3 +121,50 @@ fn convert_modrinth_to_lockmod(
         )))
     }
 }
+
+pub async fn modrinth_mod_from_hash(
+    client: &Client,
+    hash: &str,
+) -> Result<LockMod, Box<dyn std::error::Error + Send + Sync>> {
+    let url = format!(
+        "{}/v2/project/version_file/{}?algorithm=sha512",
+        MODRINTH_API_BASE, hash
+    );
+
+    let response = match client.get(&url).send().await {
+        Ok(resp) => resp,
+        Err(err) => {
+            // Handle connection errors, timeouts, etc.
+            return Err(Box::new(err));
+        }
+    };
+
+    match response.status() {
+        StatusCode::OK => {
+            // The request was successful, deserialize the JSON
+            let modrinth_mod = response.json::<ModrinthVersion>().await?;
+            let title = client
+                .get(format!(
+                    "{}/v2/project/{}",
+                    MODRINTH_API_BASE, modrinth_mod.project_id
+                ))
+                .send()
+                .await?
+                .json::<ModrinthProject>()
+                .await?
+                .title;
+            // TODO: Add version and loader verification here!
+            convert_modrinth_to_lockmod(&modrinth_mod, title)
+        }
+        StatusCode::NOT_FOUND => {
+            // The resource was not found (404)
+            let error_msg = format!("(404 Not Found) {}", hash);
+            Err(error_msg.into())
+        }
+        _ => {
+            // Other non-404 errors
+            let error_msg = format!("Received unexpected status code: {}", response.status());
+            Err(error_msg.into())
+        }
+    }
+}

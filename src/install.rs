@@ -128,7 +128,7 @@ pub async fn download_all_mods(
     Ok(())
 }
 
-fn calculate_sha512(file_path: &PathBuf) -> Result<String, io::Error> {
+pub fn calculate_sha512(file_path: &PathBuf) -> Result<String, io::Error> {
     // Open the file
     let mut file = File::open(file_path)?;
 
@@ -150,7 +150,7 @@ fn calculate_sha512(file_path: &PathBuf) -> Result<String, io::Error> {
     Ok(hex::encode(hash_result))
 }
 
-fn verify_file(file_path: &PathBuf, expected_hash: &str) -> Result<bool, io::Error> {
+pub fn verify_file(file_path: &PathBuf, expected_hash: &str) -> Result<bool, io::Error> {
     // Calculate the SHA-512 hash of the file
     let file_hash = calculate_sha512(file_path)?;
 

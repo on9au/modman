@@ -1,6 +1,7 @@
 mod api;
 mod commands;
 mod config;
+mod config_sync;
 mod datatypes;
 mod errors;
 mod install;

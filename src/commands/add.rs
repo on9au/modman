@@ -1,5 +1,6 @@
 use crate::commands::add_tools::dependencies::handle_dependencies;
 use crate::commands::add_tools::package::Package;
+use crate::config_sync::sync_files;
 use crate::utils::calculate_total_size;
 use crate::{
     actionheader, alert,
@@ -48,6 +49,7 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
             7. SYNC (config and lockfile): Add (non-duplicate) explicit mod dependencies to config. Add (non-duplicate) indirect mod dependencies to lockfile.
     */
 
+    // Parse parameters
     if options.parameters.is_empty() {
         return Err(ModManError::NoArguments);
     }
@@ -63,7 +65,27 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
         Err(e) => return Err(ModManError::IoError(e)),
     };
 
-    // Load configuration file
+    // Client Creation
+    let client = Arc::new(match Client::builder().user_agent(APP_USER_AGENT).build() {
+        Ok(result) => result,
+        Err(e) => return Err(ModManError::ReqwestError(e)),
+    });
+
+    // Sync files
+    info!("Syncing files...");
+    let sync_results = sync_files(&current_directory, &client).await?;
+    if !sync_results.missing_dependencies.is_empty() {
+        info!("There are missing mod dependencies. They will be added to the transaction.")
+    }
+    if !sync_results.new_mods.is_empty() {
+        info!("New mods detected in configuration file. They will be added to the transaction.")
+    }
+    if !sync_results.to_reinstall_bad_checksum.is_empty() {
+        info!("Some mods have mismatched checksums. They will be added to the transaction.")
+    }
+
+    // (1) Read config and lockfile
+    // Load config
     let mut config = match crate::config::read_config(&current_directory) {
         Ok(result) => result,
         Err(ModManError::FileNotFound) => {
@@ -130,10 +152,26 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
         }
     }
 
-    let client = Arc::new(match Client::builder().user_agent(APP_USER_AGENT).build() {
-        Ok(result) => result,
-        Err(e) => return Err(ModManError::ReqwestError(e)),
-    });
+    for dependency in sync_results.missing_dependencies {
+        packages.push(Package {
+            search_term: dependency.project_id,
+            source: dependency.source,
+        })
+    }
+
+    for new_mod in sync_results.new_mods {
+        packages.push(Package {
+            search_term: new_mod.id,
+            source: new_mod.source,
+        })
+    }
+
+    for mod_to_reinstall in sync_results.to_reinstall_bad_checksum {
+        packages.push(Package {
+            search_term: mod_to_reinstall.id,
+            source: mod_to_reinstall.source,
+        })
+    }
 
     for package in packages {
         let client = Arc::clone(&client);
@@ -153,6 +191,7 @@ pub async fn command_add(options: &CommandOptions) -> Result<(), ModManError> {
                 })
             }
             ModSources::CurseForge => unimplemented!(),
+            ModSources::Local => unimplemented!(),
         };
         mod_matches.push(mod_match);
     }
